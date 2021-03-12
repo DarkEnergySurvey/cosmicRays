@@ -1,0 +1,245 @@
+#include "lsst/meas/algorithms/DoubleGaussianPsf.h"
+#include "lsst/afw/detection/FootprintSet.h"
+#include "lsst/meas/algorithms/CR.h"
+#include "lsst/afw/image/Image.h"
+#include "lsst/afw/image/Mask.h"
+#include "lsst/afw/image/MaskedImage.h"
+#include "lsst/afw/detection/Footprint.h"
+#include "lsst/afw/detection/Psf.h"
+#include "lsst/afw/detection/Threshold.h"
+#include "lsst/geom.h"
+#include "lsst/afw/geom/ellipses/Quadrupole.h"
+#include "lsst/pex/policy.h"
+#include "ndarray.h"
+#include "lsst/afw/math/Statistics.h"
+#include "lsst/daf/base/PropertyList.h"
+#include "lsst/daf/base/PropertySet.h"
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
+
+namespace py = pybind11;
+using namespace pybind11::literals;
+namespace alg = lsst::meas::algorithms;
+namespace img = lsst::afw::image;
+
+template<typename T>
+void declareImage(py::module &mm, std::string typestr) {
+    using Class = img::Image<T>;
+    std::string pyclass_name = std::string("Image" + typestr);
+    py::class_<Class>(mm, pyclass_name.c_str(), py::buffer_protocol(), py::dynamic_attr())
+            .def(py::init<unsigned int, unsigned int, T>(), "width"_a, "height"_a, "initialValue"_a = 0)
+            .def(py::init<ndarray::Array<T, 2, 1> const&, bool, lsst::geom::Point2I const&>(),
+                 "array"_a, "deep"_a = false, "xy0"_a = lsst::geom::Point2I())
+            .def("getArray", py::overload_cast<>(&Class::getArray))
+            .def("getArray", py::overload_cast<>(&Class::getArray, py::const_))
+            .def("sqrt", &Class::sqrt);
+}
+
+template<typename T>
+void declareMask(py::module &mm, std::string typestr){
+    using Class = img::Mask<T>;
+    std::string pyclass_name = std::string("Mask" + typestr);
+    py::class_<img::Mask<T> >(mm, pyclass_name.c_str(), py::buffer_protocol(), py::dynamic_attr())
+            .def(py::init<unsigned int, unsigned int, img::detail::MaskPlaneDict const&>(), "width"_a, "height"_a, "planeDefs"_a = img::detail::MaskPlaneDict())
+            .def(py::init<unsigned int, unsigned int, T, img::detail::MaskPlaneDict const&>(), "width"_a, "height"_a, "initialValue"_a, "planeDefs"_a = img::detail::MaskPlaneDict())
+            .def(py::init<ndarray::Array<T, 2, 1> const&, bool, lsst::geom::Point2I const&>(),
+                 "array"_a, "deep"_a = false, "xy0"_a = lsst::geom::Point2I())
+            .def("getArray", py::overload_cast<>(&Class::getArray))
+            .def("getArray", py::overload_cast<>(&Class::getArray, py::const_))
+            .def("conformMaskPlanes", &Class::conformMaskPlanes)
+            .def("getMaskPlaneDict", &Class::getMaskPlaneDict)
+            .def("getPlaneBitMask", py::overload_cast<const std::string&>(&Class::getPlaneBitMask));
+}
+
+template<typename T>
+void declareMaskedImage(py::module &mm, std::string typestr) {
+    std::string pyclass_name = std::string("MaskedImage" + typestr);
+    py::class_<img::MaskedImage<T, int, float> >(mm, pyclass_name.c_str())
+            .def(py::init<unsigned int, unsigned int, img::detail::MaskPlaneDict const&>(), "width"_a, "height"_a, "planeDefs"_a = img::detail::MaskPlaneDict())
+            .def("getMask", &img::MaskedImage<T, int, float>::getMask)
+            .def("getImage", &img::MaskedImage<T, int, float>::getImage);
+    mm.def("makeMaskedImage", &img::makeMaskedImage<T, int, float>, "image"_a, "mask"_a = nullptr, "variance"_a = nullptr);
+}
+
+template<typename T>
+void declareStatistics(py::module &mm) {
+    mm.def("makeStatistics", py::overload_cast<lsst::afw::image::MaskedImage<T> const &,
+           int const, lsst::afw::math::StatisticsControl const &>(&lsst::afw::math::makeStatistics<T>));
+}
+
+PYBIND11_MODULE(libcosmicRays, m) {
+
+    auto daf = m.def_submodule("daf");
+    py::class_<lsst::daf::base::PropertySet>(daf, "PropertySet")
+            .def(py::init<bool>(), "flat"_a = false);
+            //.def("set", py::overload_cast<const std::string&, const std::string&>(&lsst::daf::base::PropertySet::set));
+    py::class_<lsst::daf::base::PropertyList, std::shared_ptr<lsst::daf::base::PropertyList>, lsst::daf::base::PropertySet>(daf, "PropertyList")
+            .def(py::init<>());
+            //.def("set", py::overload_cast<const std::string&, const std::string&>(&lsst::daf::base::PropertyList::set));
+
+    //py::class_<lsst::daf::base::PropertyList, lsst::daf::base::PropertySet>(daf, "PropertyList")
+    //        .def(py::init<>())
+            //.def("set", py::overload_cast<std::string const&, int const&>(&lsst::daf::base::PropertyList::set))
+            //.def("set", py::overload_cast<std::string const&, float const&>(&lsst::daf::base::PropertyList::set))
+            //.def("set", py::overload_cast<std::string const&, double const&>(&lsst::daf::base::PropertyList::set))
+            //.def("set", py::overload_cast<std::string const&, std::string const&>(&lsst::daf::base::PropertyList::set))
+    //        .def("set", py::overload_cast<const std::string&, const std::string&>(&lsst::daf::base::PropertyList::set));
+
+
+
+    auto pex = m.def_submodule("pex");
+    py::class_<lsst::pex::policy::Policy>(pex, "Policy")
+            .def(py::init<>())
+            .def("set", py::overload_cast<const std::string&, lsst::pex::policy::Policy::Ptr const&>(&lsst::pex::policy::Policy::set))
+            .def("set", py::overload_cast<const std::string&, bool>(&lsst::pex::policy::Policy::set))
+            .def("set", py::overload_cast<const std::string&, int>(&lsst::pex::policy::Policy::set))
+            .def("set", py::overload_cast<const std::string&, double>(&lsst::pex::policy::Policy::set))
+            .def("set", py::overload_cast<const std::string&, const std::string&>(&lsst::pex::policy::Policy::set))
+            .def("set", py::overload_cast<const std::string&, const char*>(&lsst::pex::policy::Policy::set))
+            .def("add", py::overload_cast<const std::string&, lsst::pex::policy::Policy::Ptr const&>(&lsst::pex::policy::Policy::add))
+            .def("add", py::overload_cast<const std::string&, bool>(&lsst::pex::policy::Policy::add))
+            .def("add", py::overload_cast<const std::string&, int>(&lsst::pex::policy::Policy::add))
+            .def("add", py::overload_cast<const std::string&, double>(&lsst::pex::policy::Policy::add))
+            .def("add", py::overload_cast<const std::string&, const std::string&>(&lsst::pex::policy::Policy::add))
+            .def("add", py::overload_cast<const std::string&, const char*>(&lsst::pex::policy::Policy::add));
+
+
+
+    auto geom = m.def_submodule("geom");
+    py::class_<lsst::geom::Point2I>(geom, "Point2I")
+            .def(py::init<int>(), "val"_a = static_cast<int>(0));
+    py::class_<lsst::afw::geom::ellipses::Quadrupole>(geom, "Quadrupole")
+            .def(py::init<double, double, double, bool>(), "ixx"_a = 1., "iyy"_a = 1., "ixy"_a = 0., "normalize"_a = false)
+            .def("getDeterminantRadius", &lsst::afw::geom::ellipses::Quadrupole::getDeterminantRadius);
+
+
+
+    auto malg = m.def_submodule("measAlg");
+    py::class_<alg::DoubleGaussianPsf>(malg, "DoubleGaussianPsf")
+            .def(py::init<int, int, double, double, double>(), "width"_a, "height"_a, "sigma1"_a, "sigma2"_a = 0.0, "b"_a = 0.0)
+            .def("clone", &alg::DoubleGaussianPsf::clone)
+            .def("resized", &alg::DoubleGaussianPsf::resized)
+            .def("getSigma1", &alg::DoubleGaussianPsf::getSigma1)
+            .def("getSigma2", &alg::DoubleGaussianPsf::getSigma2)
+            .def("getB", &alg::DoubleGaussianPsf::getB)
+            .def("isPersistable", &lsst::meas::algorithms::DoubleGaussianPsf::isPersistable)
+            .def("computeShape", &alg::DoubleGaussianPsf::computeShape);
+    malg.def("findCosmicRays", &alg::findCosmicRays<float>);
+    malg.def("findCosmicRays", &alg::findCosmicRays<double>);
+
+
+
+    auto detection = m.def_submodule("detection");
+    py::class_<lsst::afw::detection::Footprint>(detection, "Footprint")
+            .def(py::init<>())
+            .def(py::init<std::shared_ptr<lsst::afw::geom::SpanSet>, lsst::geom::Box2I const &>());
+    py::class_<lsst::afw::detection::Psf>(detection, "Psf");
+    py::class_<lsst::afw::detection::Threshold> threshold(detection, "Threshold");
+    py::enum_<lsst::afw::detection::Threshold::ThresholdType>(threshold, "ThresholdType")
+            .value("VALUE", lsst::afw::detection::Threshold::VALUE)
+            .value("BITMASK", lsst::afw::detection::Threshold::BITMASK)
+            .value("STDEV", lsst::afw::detection::Threshold::STDEV)
+            .value("VARIANCE", lsst::afw::detection::Threshold::VARIANCE)
+            .value("PIXEL_STDEV", lsst::afw::detection::Threshold::PIXEL_STDEV)
+            .export_values();
+    threshold.def(py::init<double const, lsst::afw::detection::Threshold::ThresholdType const, bool const, double const>(), "value"_a, "type"_a = lsst::afw::detection::Threshold::VALUE, "polarity"_a = true, "includeMultiplier"_a = 1.0);
+
+    py::class_<lsst::afw::detection::FootprintSet>(detection, "FootprintSet")
+            .def(py::init<lsst::afw::image::Image<int> const&, lsst::afw::detection::Threshold const&, int const, bool const>(), "img"_a, "threshold"_a, "npixMin"_a = 1, "setPeaks"_a = true)
+            .def(py::init<lsst::afw::image::Image<float> const&, lsst::afw::detection::Threshold const&, int const, bool const>(), "img"_a, "threshold"_a, "npixMin"_a = 1, "setPeaks"_a = true)
+            .def(py::init<lsst::afw::image::Image<double> const&, lsst::afw::detection::Threshold const&, int const, bool const>(), "img"_a, "threshold"_a, "npixMin"_a = 1, "setPeaks"_a = true)
+            .def(py::init<lsst::afw::image::Image<std::uint16_t> const&, lsst::afw::detection::Threshold const&, int const, bool const>(), "img"_a, "threshold"_a, "npixMin"_a = 1, "setPeaks"_a = true)
+            .def(py::init<lsst::afw::image::Image<std::uint64_t> const&, lsst::afw::detection::Threshold const&, int const, bool const>(), "img"_a, "threshold"_a, "npixMin"_a = 1, "setPeaks"_a = true)
+            .def(py::init<lsst::afw::image::Mask<int> const&, lsst::afw::detection::Threshold const&, int const>(), "img"_a, "threshold"_a, "npixMin"_a = 1)
+            .def(py::init<lsst::afw::detection::FootprintSet const&, int, bool>(), "set"_a, "rGrow"_a, "isotropic"_a = true)
+            .def("setMask", py::overload_cast<std::shared_ptr<lsst::afw::image::Mask<int> >, std::string const&>(&lsst::afw::detection::FootprintSet::setMask<int>));
+
+
+
+    auto image = m.def_submodule("image");
+
+    // Image
+    declareImage<int>(image, "int");
+    declareImage<float>(image, "float");
+    declareImage<double>(image, "double");
+    declareImage<std::uint16_t>(image, "ushort");
+    declareImage<std::uint64_t>(image, "ulong");
+
+    // Mask
+    declareMask<int>(image, "int");
+    //declareMask<float>(image, "float");
+    //declareMask<double>(image, "double");
+    //declareMask<std::uint16_t>(image, "uint");
+    //declareMask<std::uint64_t>(image, "ulong");
+
+    // MaskedImage
+    declareMaskedImage<int>(image, "int");
+    declareMaskedImage<float>(image, "float");
+    declareMaskedImage<double>(image, "double");
+    declareMaskedImage<std::uint16_t>(image, "ushort");
+    declareMaskedImage<std::uint64_t>(image, "ulong");
+
+    //
+
+
+    auto mathm = m.def_submodule("math");
+    py::class_<lsst::afw::math::StatisticsControl> statcontrol(mathm, "StatisticsControl");
+    py::enum_<lsst::afw::math::StatisticsControl::WeightsBoolean>(statcontrol, "WeightsBoolean")
+            .value("WEIGHTS_FALSE", lsst::afw::math::StatisticsControl::WeightsBoolean::WEIGHTS_FALSE)
+            .value("WEIGHTS_TRUE", lsst::afw::math::StatisticsControl::WeightsBoolean::WEIGHTS_TRUE)
+            .value("WEIGHTS_NONE", lsst::afw::math::StatisticsControl::WeightsBoolean::WEIGHTS_NONE)
+            .export_values();
+    statcontrol.def(py::init<double, int, lsst::afw::image::MaskPixel, bool, lsst::afw::math::StatisticsControl::WeightsBoolean>(),
+                    ""_a = 3.0, "numIter"_a = 3, "andMask"_a = 0x0, "isNanSafe"_a = true,
+                    "useWeights"_a = lsst::afw::math::StatisticsControl::WEIGHTS_NONE)
+            .def("setAndMask", &lsst::afw::math::StatisticsControl::setAndMask);
+
+    py::class_<lsst::afw::math::Statistics>(mathm, "Statistics")
+            .def(py::init<lsst::afw::image::Image<int> const&, lsst::afw::image::Mask<int> const&,
+                   lsst::afw::image::Image<float> const&, int const, lsst::afw::math::StatisticsControl const&>(),
+                   "img"_a, "msk"_a, "var"_a, "flags"_a, "sctrl"_a = lsst::afw::math::StatisticsControl())
+            .def(py::init<lsst::afw::image::Image<float> const&, lsst::afw::image::Mask<int> const&,
+                 lsst::afw::image::Image<float> const&, int const, lsst::afw::math::StatisticsControl const&>(),
+                 "img"_a, "msk"_a, "var"_a, "flags"_a, "sctrl"_a = lsst::afw::math::StatisticsControl())
+            .def(py::init<lsst::afw::image::Image<double> const&, lsst::afw::image::Mask<int> const&,
+                 lsst::afw::image::Image<float> const&, int const, lsst::afw::math::StatisticsControl const&>(),
+                 "img"_a, "msk"_a, "var"_a, "flags"_a, "sctrl"_a = lsst::afw::math::StatisticsControl())
+            .def(py::init<lsst::afw::image::Image<std::uint16_t> const&, lsst::afw::image::Mask<int> const&,
+                 lsst::afw::image::Image<float> const&, int const, lsst::afw::math::StatisticsControl const&>(),
+                 "img"_a, "msk"_a, "var"_a, "flags"_a, "sctrl"_a = lsst::afw::math::StatisticsControl())
+            .def(py::init<lsst::afw::image::Image<std::uint64_t> const&, lsst::afw::image::Mask<int> const&,
+                 lsst::afw::image::Image<float> const&, int const, lsst::afw::math::StatisticsControl const&>(),
+                 "img"_a, "msk"_a, "var"_a, "flags"_a, "sctrl"_a = lsst::afw::math::StatisticsControl());
+
+    py::enum_<lsst::afw::math::Property>(mathm, "Property", py::arithmetic())
+            .value("NOTHING", lsst::afw::math::Property::NOTHING)
+            .value("ERRORS", lsst::afw::math::Property::ERRORS)
+            .value("NPOINT", lsst::afw::math::Property::NPOINT)
+            .value("MEAN", lsst::afw::math::Property::MEAN)
+            .value("STDEV", lsst::afw::math::Property::STDEV)
+            .value("VARIANCE", lsst::afw::math::Property::VARIANCE)
+            .value("MEDIAN", lsst::afw::math::Property::MEDIAN)
+            .value("IQRANGE", lsst::afw::math::Property::IQRANGE)
+            .value("MEANCLIP", lsst::afw::math::Property::MEANCLIP)
+            .value("STDEVCLIP", lsst::afw::math::Property::STDEVCLIP)
+            .value("VARIANCECLIP", lsst::afw::math::Property::VARIANCECLIP)
+            .value("MIN", lsst::afw::math::Property::MIN)
+            .value("MAX", lsst::afw::math::Property::MAX)
+            .value("SUM", lsst::afw::math::Property::SUM)
+            .value("MEANSQUARE", lsst::afw::math::Property::MEANSQUARE)
+            .value("ORMASK", lsst::afw::math::Property::ORMASK)
+            .value("NCLIPPED", lsst::afw::math::Property::NCLIPPED)
+            .value("NMASKED", lsst::afw::math::Property::NMASKED)
+            .export_values();
+    declareStatistics<int>(mathm);
+    declareStatistics<float>(mathm);
+    declareStatistics<double>(mathm);
+    declareStatistics<std::uint16_t>(mathm);
+    declareStatistics<std::uint64_t>(mathm);
+
+
+    //
+    //malg.def("findCosmicRays", &lsst::meas::algorithms::findCosmicRays<img::MaskedImage<float>&, lsst::afw::detection::Psf const &, double const, daf::base::PropertySet const &, bool const>());
+}
