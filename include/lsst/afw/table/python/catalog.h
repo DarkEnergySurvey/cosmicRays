@@ -170,7 +170,7 @@ void declareCatalogOverloads(PyCatalog<Record> &cls) {
  *                   (used to set the class name).
  */
 template <typename Record>
-PyCatalog<Record> declareCatalog(utils::python::WrapperCollection &wrappers, std::string const &name,
+PyCatalog<Record> declareCatalog(py::module_ &mod, std::string const &name,
                                  bool isBase = false) {
     namespace py = pybind11;
     using namespace pybind11::literals;
@@ -187,89 +187,87 @@ PyCatalog<Record> declareCatalog(utils::python::WrapperCollection &wrappers, std
 
     // We need py::dynamic_attr() in the class definition to support our Python-side caching
     // of the associated ColumnView.
-    return wrappers.wrapType(
-            PyCatalog<Record>(wrappers.module, fullName.c_str(), py::dynamic_attr()),
-            [](auto &mod, auto &cls) {
-                /* Constructors */
-                cls.def(py::init<Schema const &>(), "schema"_a);
-                cls.def(py::init<std::shared_ptr<Table> const &>(), "table"_a);
-                cls.def(py::init<Catalog const &>(), "other"_a);
+    PyCatalog<Record> cls(mod, fullName.c_str(), py::dynamic_attr());
+    /* Constructors */
+    cls.def(py::init<Schema const &>(), "schema"_a);
+    cls.def(py::init<std::shared_ptr<Table> const &>(), "table"_a);
+    cls.def(py::init<Catalog const &>(), "other"_a);
 
-                /* Static Methods */
-                cls.def_static("readFits", (Catalog(*)(std::string const &, int, int)) & Catalog::readFits,
-                               "filename"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0);
-                cls.def_static("readFits", (Catalog(*)(fits::MemFileManager &, int, int)) & Catalog::readFits,
-                               "manager"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0);
-                // readFits taking Fits objects not wrapped, because Fits objects are not wrapped.
+    /* Static Methods */
+    cls.def_static("readFits", (Catalog(*)(std::string const &, int, int)) & Catalog::readFits,
+                   "filename"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0);
+    cls.def_static("readFits", (Catalog(*)(fits::MemFileManager &, int, int)) & Catalog::readFits,
+                   "manager"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0);
+    // readFits taking Fits objects not wrapped, because Fits objects are not wrapped.
 
-                /* Methods */
-                cls.def("getTable", &Catalog::getTable);
-                cls.def_property_readonly("table", &Catalog::getTable);
-                cls.def("getSchema", &Catalog::getSchema);
-                cls.def_property_readonly("schema", &Catalog::getSchema);
-                cls.def("capacity", &Catalog::capacity);
-                cls.def("__len__", &Catalog::size);
-                cls.def("resize", &Catalog::resize);
+    /* Methods */
+    cls.def("getTable", &Catalog::getTable);
+    cls.def_property_readonly("table", &Catalog::getTable);
+    cls.def("getSchema", &Catalog::getSchema);
+    cls.def_property_readonly("schema", &Catalog::getSchema);
+    cls.def("capacity", &Catalog::capacity);
+    cls.def("__len__", &Catalog::size);
+    cls.def("resize", &Catalog::resize);
 
-                // Use private names for the following so the public Python method
-                // can manage the _column cache
-                cls.def("_getColumnView", &Catalog::getColumnView);
-                cls.def("_addNew", &Catalog::addNew);
-                cls.def("_extend", [](Catalog &self, Catalog const &other, bool deep) {
-                    self.insert(self.end(), other.begin(), other.end(), deep);
-                });
-                cls.def("_extend", [](Catalog &self, Catalog const &other, SchemaMapper const &mapper) {
-                    self.insert(mapper, self.end(), other.begin(), other.end());
-                });
-                cls.def("_append",
-                        [](Catalog &self, std::shared_ptr<Record> const &rec) { self.push_back(rec); });
-                cls.def("_delitem_", [](Catalog &self, std::ptrdiff_t i) {
-                    self.erase(self.begin() + utils::python::cppIndex(self.size(), i));
-                });
-                cls.def("_delslice_", [](Catalog &self, py::slice const &s) {
-                    Py_ssize_t start = 0, stop = 0, step = 0, length = 0;
-                    if (PySlice_GetIndicesEx(s.ptr(), self.size(), &start, &stop, &step, &length) != 0) {
-                        throw py::error_already_set();
-                    }
-                    if (step != 1) {
-                        throw py::index_error("Slice step must not exactly 1");
-                    }
-                    self.erase(self.begin() + start, self.begin() + stop);
-                });
-                cls.def("_clear", &Catalog::clear);
+    // Use private names for the following so the public Python method
+    // can manage the _column cache
+    cls.def("_getColumnView", &Catalog::getColumnView);
+    cls.def("_addNew", &Catalog::addNew);
+    cls.def("_extend", [](Catalog &self, Catalog const &other, bool deep) {
+        self.insert(self.end(), other.begin(), other.end(), deep);
+    });
+    cls.def("_extend", [](Catalog &self, Catalog const &other, SchemaMapper const &mapper) {
+        self.insert(mapper, self.end(), other.begin(), other.end());
+    });
+    cls.def("_append",
+            [](Catalog &self, std::shared_ptr<Record> const &rec) { self.push_back(rec); });
+    cls.def("_delitem_", [](Catalog &self, std::ptrdiff_t i) {
+        self.erase(self.begin() + utils::python::cppIndex(self.size(), i));
+    });
+    cls.def("_delslice_", [](Catalog &self, py::slice const &s) {
+        Py_ssize_t start = 0, stop = 0, step = 0, length = 0;
+        if (PySlice_GetIndicesEx(s.ptr(), self.size(), &start, &stop, &step, &length) != 0) {
+            throw py::error_already_set();
+        }
+        if (step != 1) {
+            throw py::index_error("Slice step must not exactly 1");
+        }
+        self.erase(self.begin() + start, self.begin() + stop);
+    });
+    cls.def("_clear", &Catalog::clear);
 
-                cls.def("set", &Catalog::set);
-                cls.def("_getitem_", [](Catalog &self, int i) {
-                    return self.get(utils::python::cppIndex(self.size(), i));
-                });
-                cls.def("isContiguous", &Catalog::isContiguous);
-                cls.def("writeFits",
-                        (void (Catalog::*)(std::string const &, std::string const &, int) const) &
-                                Catalog::writeFits,
-                        "filename"_a, "mode"_a = "w", "flags"_a = 0);
-                cls.def("writeFits",
-                        (void (Catalog::*)(fits::MemFileManager &, std::string const &, int) const) &
-                                Catalog::writeFits,
-                        "manager"_a, "mode"_a = "w", "flags"_a = 0);
-                cls.def("reserve", &Catalog::reserve);
-                cls.def("subset",
-                        (Catalog(Catalog::*)(ndarray::Array<bool const, 1> const &) const) & Catalog::subset);
-                cls.def("subset",
-                        (Catalog(Catalog::*)(std::ptrdiff_t, std::ptrdiff_t, std::ptrdiff_t) const) &
-                                Catalog::subset);
+    cls.def("set", &Catalog::set);
+    cls.def("_getitem_", [](Catalog &self, int i) {
+        return self.get(utils::python::cppIndex(self.size(), i));
+    });
+    cls.def("isContiguous", &Catalog::isContiguous);
+    cls.def("writeFits",
+            (void (Catalog::*)(std::string const &, std::string const &, int) const) &
+            Catalog::writeFits,
+            "filename"_a, "mode"_a = "w", "flags"_a = 0);
+    cls.def("writeFits",
+            (void (Catalog::*)(fits::MemFileManager &, std::string const &, int) const) &
+            Catalog::writeFits,
+            "manager"_a, "mode"_a = "w", "flags"_a = 0);
+    cls.def("reserve", &Catalog::reserve);
+    cls.def("subset",
+            (Catalog(Catalog::*)(ndarray::Array<bool const, 1> const &) const) & Catalog::subset);
+    cls.def("subset",
+            (Catalog(Catalog::*)(std::ptrdiff_t, std::ptrdiff_t, std::ptrdiff_t) const) &
+            Catalog::subset);
 
-                declareCatalogOverloads<std::int32_t>(cls);
-                declareCatalogOverloads<std::int64_t>(cls);
-                declareCatalogOverloads<float>(cls);
-                declareCatalogOverloads<double>(cls);
-                declareCatalogOverloads<lsst::geom::Angle>(cls);
+    declareCatalogOverloads<std::int32_t>(cls);
+    declareCatalogOverloads<std::int64_t>(cls);
+    declareCatalogOverloads<float>(cls);
+    declareCatalogOverloads<double>(cls);
+    declareCatalogOverloads<lsst::geom::Angle>(cls);
 
-                cls.def("_getitem_",
-                        [](Catalog const &self, Key<Flag> const &key) -> ndarray::Array<bool const, 1, 0> {
-                            return _getArrayFromCatalog(self, key);
-                        });
+    cls.def("_getitem_",
+            [](Catalog const &self, Key<Flag> const &key) -> ndarray::Array<bool const, 1, 0> {
+        return _getArrayFromCatalog(self, key);
+    });
 
-            });
+    return cls;
 }
 
 }  // namespace python

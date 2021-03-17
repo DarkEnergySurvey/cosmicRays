@@ -54,7 +54,7 @@ using PySortedCatalog =
  *
  */
 template <typename Record>
-PySortedCatalog<Record> declareSortedCatalog(utils::python::WrapperCollection &wrappers,
+PySortedCatalog<Record> declareSortedCatalog(py::module_ &mod,
                                              std::string const &name, bool isBase = false) {
     namespace py = pybind11;
     using namespace pybind11::literals;
@@ -62,7 +62,7 @@ PySortedCatalog<Record> declareSortedCatalog(utils::python::WrapperCollection &w
     using Catalog = SortedCatalogT<Record>;
     using Table = typename Record::Table;
 
-    auto clsBase = declareCatalog<Record>(wrappers, name, true);
+    auto clsBase = declareCatalog<Record>(mod, name, true);
 
     std::string fullName;
     if (isBase) {
@@ -73,59 +73,56 @@ PySortedCatalog<Record> declareSortedCatalog(utils::python::WrapperCollection &w
 
     // We need py::dynamic_attr() in the class definition to support our Python-side caching
     // of the associated ColumnView.
-    return wrappers.wrapType(
-            PySortedCatalog<Record>(wrappers.module, fullName.c_str(), py::dynamic_attr()),
-            [clsBase](auto &mod, auto &cls) {
-                /* Constructors */
-                cls.def(pybind11::init<Schema const &>());
-                cls.def(pybind11::init<std::shared_ptr<Table> const &>(),
-                        "table"_a = std::shared_ptr<Table>());
-                cls.def(pybind11::init<Catalog const &>());
+    return PySortedCatalog<Record>(mod, fullName.c_str(), py::dynamic_attr())
+            /* Constructors */
+            .def(pybind11::init<Schema const &>())
+            .def(pybind11::init<std::shared_ptr<Table> const &>(),
+                 "table"_a = std::shared_ptr<Table>())
+            .def(pybind11::init<Catalog const &>())
 
-                /* Overridden and Variant Methods */
-                cls.def_static("readFits", (Catalog(*)(std::string const &, int, int)) & Catalog::readFits,
-                               "filename"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0);
-                cls.def_static("readFits", (Catalog(*)(fits::MemFileManager &, int, int)) & Catalog::readFits,
-                               "manager"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0);
-                // readFits taking Fits objects not wrapped, because Fits objects are not wrapped.
+            /* Overridden and Variant Methods */
+            .def_static("readFits", (Catalog(*)(std::string const &, int, int)) & Catalog::readFits,
+                        "filename"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0)
+            .def_static("readFits", (Catalog(*)(fits::MemFileManager &, int, int)) & Catalog::readFits,
+                        "manager"_a, "hdu"_a = fits::DEFAULT_HDU, "flags"_a = 0)
+            // readFits taking Fits objects not wrapped, because Fits objects are not wrapped.
 
-                cls.def("subset",
-                        (Catalog(Catalog::*)(ndarray::Array<bool const, 1> const &) const) & Catalog::subset);
-                cls.def("subset",
-                        (Catalog(Catalog::*)(std::ptrdiff_t, std::ptrdiff_t, std::ptrdiff_t) const) &
-                                Catalog::subset);
+            .def("subset",
+                 (Catalog(Catalog::*)(ndarray::Array<bool const, 1> const &) const) & Catalog::subset)
+            .def("subset",
+                 (Catalog(Catalog::*)(std::ptrdiff_t, std::ptrdiff_t, std::ptrdiff_t) const) &
+                 Catalog::subset)
 
-                // The following three methods shadow those in the base class in C++ (unlike the base class
-                // versions, they do not require a key argument because we assume it's the ID key).  In
-                // Python, we make that appear as though the key argument is available but has a default
-                // value.  If that key is not None, we delegate to the base class.
-                cls.def("isSorted",
-                        [clsBase](py::object const &self, py::object key) -> py::object {
-                            if (key.is(py::none())) {
-                                key = self.attr("table").attr("getIdKey")();
-                            }
-                            return clsBase.attr("isSorted")(self, key);
-                        },
-                        "key"_a = py::none());
-                cls.def("sort",
-                        [clsBase](py::object const &self, py::object key) -> py::object {
-                            if (key.is(py::none())) {
-                                key = self.attr("table").attr("getIdKey")();
-                            }
-                            return clsBase.attr("sort")(self, key);
-                        },
-                        "key"_a = py::none());
-                cls.def("find",
-                        [clsBase](py::object const &self, py::object const &value,
-                                  py::object key) -> py::object {
-                            if (key.is(py::none())) {
-                                key = self.attr("table").attr("getIdKey")();
-                            }
-                            return clsBase.attr("find")(self, value, key);
-                        },
-                        "value"_a, "key"_a = py::none());
+            // The following three methods shadow those in the base class in C++ (unlike the base class
+            // versions, they do not require a key argument because we assume it's the ID key).  In
+            // Python, we make that appear as though the key argument is available but has a default
+            // value.  If that key is not None, we delegate to the base class.
+            .def("isSorted",
+                 [clsBase](py::object const &self, py::object key) -> py::object {
+        if (key.is(py::none())) {
+            key = self.attr("table").attr("getIdKey")();
+        }
+        return clsBase.attr("isSorted")(self, key);
+    },
+    "key"_a = py::none())
+    .def("sort",
+    [clsBase](py::object const &self, py::object key) -> py::object {
+    if (key.is(py::none())) {
+    key = self.attr("table").attr("getIdKey")();
+}
+return clsBase.attr("sort")(self, key);
+},
+"key"_a = py::none())
+.def("find",
+     [clsBase](py::object const &self, py::object const &value,
+     py::object key) -> py::object {
+    if (key.is(py::none())) {
+        key = self.attr("table").attr("getIdKey")();
+    }
+    return clsBase.attr("find")(self, value, key);
+},
+"value"_a, "key"_a = py::none());
 
-            });
 }
 
 }  // namespace python

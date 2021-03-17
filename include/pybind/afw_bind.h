@@ -22,6 +22,7 @@ WRAP(Math);
 }
 
 namespace image {
+WRAP(Initial);
 WRAP(Image);
 }
 

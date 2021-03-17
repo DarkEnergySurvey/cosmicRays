@@ -33,7 +33,6 @@
 
 namespace py = pybind11;
 using namespace py::literals;
-using lsst::utils::python::WrapperCollection;
 using lsst::utils::python::PySharedPtr;
 
 namespace lsst {
@@ -43,47 +42,40 @@ using PyPeakRecord = py::class_<PeakRecord, std::shared_ptr<PeakRecord>, table::
 using PyPeakTable = py::class_<PeakTable, std::shared_ptr<PeakTable>, table::BaseTable>;
 
 namespace {
-void wrapThreshold(utils::python::WrapperCollection& wrappers) {
-    auto clsThreshold = wrappers.wrapType(
-            py::class_<Threshold, std::shared_ptr<Threshold>>(wrappers.module, "Threshold"),
-            [](auto& mod, auto& cls) {
-                cls.def(py::init<double const, typename Threshold::ThresholdType const, bool const,
-                                 double const>(),
-                        "value"_a, "type"_a = Threshold::VALUE, "polarity"_a = true,
-                        "includeMultiplier"_a = 1.0);
+WRAP(Threshold) {
+    py::class_<Threshold, std::shared_ptr<Threshold>> cls(mod, "Threshold");
+    py::enum_<Threshold::ThresholdType>(cls, "ThresholdType")
+            .value("VALUE", Threshold::ThresholdType::VALUE)
+            .value("BITMASK", Threshold::ThresholdType::BITMASK)
+            .value("STDEV", Threshold::ThresholdType::STDEV)
+            .value("VARIANCE", Threshold::ThresholdType::VARIANCE)
+            .value("PIXEL_STDEV", Threshold::ThresholdType::PIXEL_STDEV)
+            .export_values();
+    cls.def(py::init<double const, typename Threshold::ThresholdType const, bool const,
+            double const>(),
+            "value"_a, "type"_a = Threshold::VALUE, "polarity"_a = true,
+            "includeMultiplier"_a = 1.0);
 
-                cls.def("getType", &Threshold::getType);
-                cls.def_static("parseTypeString", Threshold::parseTypeString);
-                cls.def_static("getTypeString", Threshold::getTypeString);
-                cls.def("getValue", (double (Threshold::*)(const double) const) & Threshold::getValue,
-                        "param"_a = -1);
-                //
-                //    template<typename ImageT>
-                //    double getValue(ImageT const& image) const;
-                //
-                cls.def("getPolarity", &Threshold::getPolarity);
-                cls.def("setPolarity", &Threshold::setPolarity);
-                cls.def("getIncludeMultiplier", &Threshold::getIncludeMultiplier);
-                cls.def("setIncludeMultiplier", &Threshold::setIncludeMultiplier);
-            });
+    cls.def("getType", &Threshold::getType);
+    cls.def_static("parseTypeString", Threshold::parseTypeString);
+    cls.def_static("getTypeString", Threshold::getTypeString);
+    cls.def("getValue", (double (Threshold::*)(const double) const) & Threshold::getValue,
+            "param"_a = -1);
+    //
+    //    template<typename ImageT>
+    //    double getValue(ImageT const& image) const;
+    //
+    cls.def("getPolarity", &Threshold::getPolarity);
+    cls.def("setPolarity", &Threshold::setPolarity);
+    cls.def("getIncludeMultiplier", &Threshold::getIncludeMultiplier);
+    cls.def("setIncludeMultiplier", &Threshold::setIncludeMultiplier);
 
-    wrappers.wrapType(py::enum_<Threshold::ThresholdType>(clsThreshold, "ThresholdType"),
-                      [](auto& mod, auto& enm) {
-                          enm.value("VALUE", Threshold::ThresholdType::VALUE);
-                          enm.value("BITMASK", Threshold::ThresholdType::BITMASK);
-                          enm.value("STDEV", Threshold::ThresholdType::STDEV);
-                          enm.value("VARIANCE", Threshold::ThresholdType::VARIANCE);
-                          enm.value("PIXEL_STDEV", Threshold::ThresholdType::PIXEL_STDEV);
-                          enm.export_values();
-                      });
 
-    wrappers.wrap([](auto& mod) {
-        mod.def("createThreshold", createThreshold, "value"_a, "type"_a = "value", "polarity"_a = true);
-    });
+    mod.def("createThreshold", createThreshold, "value"_a, "type"_a = "value", "polarity"_a = true);
 }
 
 template <typename MaskT>
-void declareMaskFromFootprintList(WrapperCollection &wrappers) {
+void declareMaskFromFootprintList(py::module_ &mod) {
     auto maskSetter = [](lsst::afw::image::Mask<MaskT> *mask,
                          std::vector<std::shared_ptr<lsst::afw::detection::Footprint>> const &footprints,
                          MaskT const bitmask, bool doClip) {
@@ -102,18 +94,16 @@ void declareMaskFromFootprintList(WrapperCollection &wrappers) {
         }
     };
 
-    wrappers.wrap([&maskSetter](auto &mod) {
-        mod.def("setMaskFromFootprintList", std::move(maskSetter), "mask"_a, "footprints"_a, "bitmask"_a,
+    mod.def("setMaskFromFootprintList", std::move(maskSetter), "mask"_a, "footprints"_a, "bitmask"_a,
                 "doClip"_a = true);
-    });
+
 }
 
 
-void wrapFootprint(WrapperCollection &wrappers) {
-
-    wrappers.wrapType(
-            py::class_<Footprint, std::shared_ptr<Footprint>>(wrappers.module, "Footprint"),
-            [](auto &mod, auto &cls) {
+WRAP(Footprint) {
+    //wrappers.wrapType(
+            py::class_<Footprint, std::shared_ptr<Footprint>> cls(mod, "Footprint");
+    //        [](auto &mod, auto &cls) {
                 cls.def(py::init<std::shared_ptr<geom::SpanSet>, lsst::geom::Box2I const &>(), "inputSpans"_a,
                         "region"_a = lsst::geom::Box2I());
 
@@ -193,14 +183,14 @@ void wrapFootprint(WrapperCollection &wrappers) {
                 cls.def("__eq__",
                         [](Footprint const &self, Footprint const &other) -> bool { return self == other; },
                         py::is_operator());
-            });
+            //});
 
-    declareMaskFromFootprintList<lsst::afw::image::MaskPixel>(wrappers);
+    declareMaskFromFootprintList<lsst::afw::image::MaskPixel>(mod);
 
-    wrappers.wrap([](auto &mod) {
-        mod.def("mergeFootprints", &mergeFootprints);
-        mod.def("footprintToBBoxList", &footprintToBBoxList);
-    });
+    //wrappers.wrap([](auto &mod) {
+    mod.def("mergeFootprints", &mergeFootprints);
+    mod.def("footprintToBBoxList", &footprintToBBoxList);
+    //});
 }
 
 template <typename PixelT, typename PyClass>
@@ -246,177 +236,157 @@ void declareTemplatedMembers(PyClass &cls) {
     declareSetMask<image::MaskPixel>(cls);
 }
 
-void wrapFootprintSet(utils::python::WrapperCollection &wrappers) {
-    wrappers.wrapType(
-            py::class_<FootprintSet, std::shared_ptr<FootprintSet>>(wrappers.module, "FootprintSet"),
-            [](auto &mod, auto &cls) {
-                declareTemplatedMembers<std::uint16_t>(cls);
-                declareTemplatedMembers<int>(cls);
-                declareTemplatedMembers<float>(cls);
-                declareTemplatedMembers<double>(cls);
+WRAP(FootprintSet) {
+    py::class_<FootprintSet, std::shared_ptr<FootprintSet>> cls(mod, "FootprintSet");
+    declareTemplatedMembers<std::uint16_t>(cls);
+    declareTemplatedMembers<int>(cls);
+    declareTemplatedMembers<float>(cls);
+    declareTemplatedMembers<double>(cls);
 
-                cls.def(py::init<image::Mask<image::MaskPixel> const &, Threshold const &, int const>(),
-                        "img"_a, "threshold"_a, "npixMin"_a = 1);
+    cls.def(py::init<image::Mask<image::MaskPixel> const &, Threshold const &, int const>(),
+            "img"_a, "threshold"_a, "npixMin"_a = 1);
 
-                cls.def(py::init<lsst::geom::Box2I>(), "region"_a);
-                cls.def(py::init<FootprintSet const &>(), "set"_a);
-                cls.def(py::init<FootprintSet const &, int, FootprintControl const &>(), "set"_a, "rGrow"_a,
-                        "ctrl"_a);
-                cls.def(py::init<FootprintSet const &, int, bool>(), "set"_a, "rGrow"_a, "isotropic"_a);
-                cls.def(py::init<FootprintSet const &, FootprintSet const &, bool>(), "footprints1"_a,
-                        "footprints2"_a, "includePeaks"_a);
+    cls.def(py::init<lsst::geom::Box2I>(), "region"_a);
+    cls.def(py::init<FootprintSet const &>(), "set"_a);
+    cls.def(py::init<FootprintSet const &, int, FootprintControl const &>(), "set"_a, "rGrow"_a,
+            "ctrl"_a);
+    cls.def(py::init<FootprintSet const &, int, bool>(), "set"_a, "rGrow"_a, "isotropic"_a);
+    cls.def(py::init<FootprintSet const &, FootprintSet const &, bool>(), "footprints1"_a,
+            "footprints2"_a, "includePeaks"_a);
 
-                cls.def("swap", &FootprintSet::swap);
-                // setFootprints takes shared_ptr<FootprintList> and getFootprints returns it,
-                // but pybind11 can't handle that type, so use a custom getter and setter
-                cls.def("setFootprints", [](FootprintSet &self, FootprintSet::FootprintList footList) {
-                    self.setFootprints(std::make_shared<FootprintSet::FootprintList>(std::move(footList)));
-                });
-                cls.def("getFootprints", [](FootprintSet &self) { return *(self.getFootprints()); });
-                cls.def("makeSources", &FootprintSet::makeSources);
-                cls.def("setRegion", &FootprintSet::setRegion);
-                cls.def("getRegion", &FootprintSet::getRegion);
-                cls.def("insertIntoImage", &FootprintSet::insertIntoImage);
-                cls.def("setMask", (void (FootprintSet::*)(image::Mask<lsst::afw::image::MaskPixel> *,
-                                                           std::string const &)) &
-                                           FootprintSet::setMask<lsst::afw::image::MaskPixel>);
-                cls.def("setMask",
-                        (void (FootprintSet::*)(std::shared_ptr<image::Mask<lsst::afw::image::MaskPixel>>,
-                                                std::string const &)) &
-                                FootprintSet::setMask<lsst::afw::image::MaskPixel>);
-                cls.def("merge", &FootprintSet::merge, "rhs"_a, "tGrow"_a = 0, "rGrow"_a = 0,
-                        "isotropic"_a = true);
-            });
+    cls.def("swap", &FootprintSet::swap);
+    // setFootprints takes shared_ptr<FootprintList> and getFootprints returns it,
+    // but pybind11 can't handle that type, so use a custom getter and setter
+    cls.def("setFootprints", [](FootprintSet &self, FootprintSet::FootprintList footList) {
+        self.setFootprints(std::make_shared<FootprintSet::FootprintList>(std::move(footList)));
+    });
+    cls.def("getFootprints", [](FootprintSet &self) { return *(self.getFootprints()); });
+    cls.def("makeSources", &FootprintSet::makeSources);
+    cls.def("setRegion", &FootprintSet::setRegion);
+    cls.def("getRegion", &FootprintSet::getRegion);
+    cls.def("insertIntoImage", &FootprintSet::insertIntoImage);
+    cls.def("setMask", (void (FootprintSet::*)(image::Mask<lsst::afw::image::MaskPixel> *,
+                                               std::string const &)) &
+            FootprintSet::setMask<lsst::afw::image::MaskPixel>);
+    cls.def("setMask",
+            (void (FootprintSet::*)(std::shared_ptr<image::Mask<lsst::afw::image::MaskPixel>>,
+                                    std::string const &)) &
+            FootprintSet::setMask<lsst::afw::image::MaskPixel>);
+    cls.def("merge", &FootprintSet::merge, "rhs"_a, "tGrow"_a = 0, "rGrow"_a = 0,
+            "isotropic"_a = true);
 }
 
-void wrapFootprintMerge(utils::python::WrapperCollection &wrappers) {
+WRAP(FootprintMerge) {
+    py::class_<FootprintMergeList>(mod, "FootprintMergeList")
+            .def(py::init<afw::table::Schema &, std::vector<std::string> const &,
+                 afw::table::Schema const &>(),
+                 "sourceSchema"_a, "filterList"_a, "initialPeakSchema"_a)
+            .def(py::init<afw::table::Schema &, std::vector<std::string> const &>(), "sourceSchema"_a,
+                 "filterList"_a)
 
-    wrappers.wrapType(
-            py::class_<FootprintMergeList>(wrappers.module, "FootprintMergeList"), [](auto &mod, auto &cls) {
-                cls.def(py::init<afw::table::Schema &, std::vector<std::string> const &,
-                                 afw::table::Schema const &>(),
-                        "sourceSchema"_a, "filterList"_a, "initialPeakSchema"_a);
-                cls.def(py::init<afw::table::Schema &, std::vector<std::string> const &>(), "sourceSchema"_a,
-                        "filterList"_a);
+            .def("getPeakSchema", &FootprintMergeList::getPeakSchema)
+            .def("addCatalog", &FootprintMergeList::addCatalog, "sourceTable"_a, "inputCat"_a,
+                 "filter"_a, "minNewPeakDist"_a = -1., "doMerge"_a = true, "maxSamePeakDist"_a = -1.)
+            .def("clearCatalog", &FootprintMergeList::clearCatalog)
+            .def("getFinalSources", &FootprintMergeList::getFinalSources, "outputCat"_a);
 
-                cls.def("getPeakSchema", &FootprintMergeList::getPeakSchema);
-                cls.def("addCatalog", &FootprintMergeList::addCatalog, "sourceTable"_a, "inputCat"_a,
-                        "filter"_a, "minNewPeakDist"_a = -1., "doMerge"_a = true, "maxSamePeakDist"_a = -1.);
-                cls.def("clearCatalog", &FootprintMergeList::clearCatalog);
-                cls.def("getFinalSources", &FootprintMergeList::getFinalSources, "outputCat"_a);
-            });
 }
 
-void wrapFootprintCtrl(utils::python::WrapperCollection& wrappers) {
-    wrappers.wrapType(py::class_<FootprintControl>(wrappers.module, "FootprintControl"),
-                      [](auto& mod, auto& cls) {
-                          cls.def(py::init<>());
-                          cls.def(py::init<bool, bool>(), "circular"_a, "isotropic"_a = false);
-                          cls.def(py::init<bool, bool, bool, bool>(), "left"_a, "right"_a, "up"_a, "down"_a);
+WRAP(FootprintCtrl) {
+    py::class_<FootprintControl>(mod, "FootprintControl")
+            .def(py::init<>())
+            .def(py::init<bool, bool>(), "circular"_a, "isotropic"_a = false)
+            .def(py::init<bool, bool, bool, bool>(), "left"_a, "right"_a, "up"_a, "down"_a)
 
-                          cls.def("growCircular", &FootprintControl::growCircular);
-                          cls.def("growIsotropic", &FootprintControl::growIsotropic);
-                          cls.def("growLeft", &FootprintControl::growLeft);
-                          cls.def("growRight", &FootprintControl::growRight);
-                          cls.def("growUp", &FootprintControl::growUp);
-                          cls.def("growDown", &FootprintControl::growDown);
+            .def("growCircular", &FootprintControl::growCircular)
+            .def("growIsotropic", &FootprintControl::growIsotropic)
+            .def("growLeft", &FootprintControl::growLeft)
+            .def("growRight", &FootprintControl::growRight)
+            .def("growUp", &FootprintControl::growUp)
+            .def("growDown", &FootprintControl::growDown)
 
-                          cls.def("isCircular", &FootprintControl::isCircular);
-                          cls.def("isIsotropic", &FootprintControl::isIsotropic);
-                          cls.def("isLeft", &FootprintControl::isLeft);
-                          cls.def("isRight", &FootprintControl::isRight);
-                          cls.def("isUp", &FootprintControl::isUp);
-                          cls.def("isDown", &FootprintControl::isDown);
-                      });
+            .def("isCircular", &FootprintControl::isCircular)
+            .def("isIsotropic", &FootprintControl::isIsotropic)
+            .def("isLeft", &FootprintControl::isLeft)
+            .def("isRight", &FootprintControl::isRight)
+            .def("isUp", &FootprintControl::isUp)
+            .def("isDown", &FootprintControl::isDown);
 
-    auto clsHeavyFootprintCtrl = wrappers.wrapType(
-            py::class_<HeavyFootprintCtrl>(wrappers.module, "HeavyFootprintCtrl"), [](auto& mod, auto& cls) {
-                cls.def(py::init<HeavyFootprintCtrl::ModifySource>(),
-                        "modifySource"_a = HeavyFootprintCtrl::ModifySource::NONE);
+    py::class_<HeavyFootprintCtrl> cls(mod, "HeavyFootprintCtrl");
+    py::enum_<HeavyFootprintCtrl::ModifySource>(cls, "ModifySource")
+            .value("NONE", HeavyFootprintCtrl::ModifySource::NONE)
+            .value("SET", HeavyFootprintCtrl::ModifySource::SET)
+            .export_values();
 
-                cls.def("getModifySource", &HeavyFootprintCtrl::getModifySource);
-                cls.def("setModifySource", &HeavyFootprintCtrl::setModifySource);
-                cls.def("getImageVal", &HeavyFootprintCtrl::getImageVal);
-                cls.def("setImageVal", &HeavyFootprintCtrl::setImageVal);
-                cls.def("getMaskVal", &HeavyFootprintCtrl::getMaskVal);
-                cls.def("setMaskVal", &HeavyFootprintCtrl::setMaskVal);
-                cls.def("getVarianceVal", &HeavyFootprintCtrl::getVarianceVal);
-                cls.def("setVarianceVal", &HeavyFootprintCtrl::setVarianceVal);
-            });
+    cls.def(py::init<HeavyFootprintCtrl::ModifySource>(),
+            "modifySource"_a = HeavyFootprintCtrl::ModifySource::NONE);
 
-    wrappers.wrapType(py::enum_<HeavyFootprintCtrl::ModifySource>(clsHeavyFootprintCtrl, "ModifySource"),
-                      [](auto& mod, auto& enm) {
-                          enm.value("NONE", HeavyFootprintCtrl::ModifySource::NONE);
-                          enm.value("SET", HeavyFootprintCtrl::ModifySource::SET);
-                          enm.export_values();
-                      });
+    cls.def("getModifySource", &HeavyFootprintCtrl::getModifySource);
+    cls.def("setModifySource", &HeavyFootprintCtrl::setModifySource);
+    cls.def("getImageVal", &HeavyFootprintCtrl::getImageVal);
+    cls.def("setImageVal", &HeavyFootprintCtrl::setImageVal);
+    cls.def("getMaskVal", &HeavyFootprintCtrl::getMaskVal);
+    cls.def("setMaskVal", &HeavyFootprintCtrl::setMaskVal);
+    cls.def("getVarianceVal", &HeavyFootprintCtrl::getVarianceVal);
+    cls.def("setVarianceVal", &HeavyFootprintCtrl::setVarianceVal);
+
 }
 
-void wrapGaussianPsf(utils::python::WrapperCollection& wrappers) {
-    wrappers.wrapType(
-            py::class_<GaussianPsf, std::shared_ptr<GaussianPsf>, Psf>(wrappers.module, "GaussianPsf"),
-            [](auto& mod, auto& cls) {
-                table::io::python::addPersistableMethods<GaussianPsf>(cls);
+WRAP(GaussianPsf) {
+    py::class_<GaussianPsf, std::shared_ptr<GaussianPsf>, Psf> cls(mod, "GaussianPsf");
+    table::io::python::addPersistableMethods<GaussianPsf>(cls);
 
-                cls.def(py::init<int, int, double>(), "width"_a, "height"_a, "sigma"_a);
-                cls.def(py::init<lsst::geom::Extent2I const&, double>(), "dimensions"_a, "sigma"_a);
+    cls.def(py::init<int, int, double>(), "width"_a, "height"_a, "sigma"_a);
+    cls.def(py::init<lsst::geom::Extent2I const&, double>(), "dimensions"_a, "sigma"_a);
 
-                cls.def("clone", &GaussianPsf::clone);
-                cls.def("resized", &GaussianPsf::resized, "width"_a, "height"_a);
-                cls.def("getDimensions", &GaussianPsf::getDimensions);
-                cls.def("getSigma", &GaussianPsf::getSigma);
-                cls.def("isPersistable", &GaussianPsf::isPersistable);
-            });
+    cls.def("clone", &GaussianPsf::clone);
+    cls.def("resized", &GaussianPsf::resized, "width"_a, "height"_a);
+    cls.def("getDimensions", &GaussianPsf::getDimensions);
+    cls.def("getSigma", &GaussianPsf::getSigma);
+    cls.def("isPersistable", &GaussianPsf::isPersistable);
 }
 
 template <typename ImagePixelT, typename MaskPixelT = lsst::afw::image::MaskPixel,
           typename VariancePixelT = lsst::afw::image::VariancePixel>
-void declareHeavyFootprint(WrapperCollection &wrappers, std::string const &suffix) {
+void declareHeavyFootprint(py::module_ &mod, std::string const &suffix) {
     using Class = HeavyFootprint<ImagePixelT>;
-    wrappers.wrapType(
-            py::class_<Class, std::shared_ptr<Class>, Footprint>(wrappers.module,
-                                                                 ("HeavyFootprint" + suffix).c_str()),
-            [](auto &mod, auto &cls) {
-                cls.def(py::init<Footprint const &,
-                                 lsst::afw::image::MaskedImage<ImagePixelT, MaskPixelT, VariancePixelT> const
-                                         &,
-                                 HeavyFootprintCtrl const *>(),
-                        "foot"_a, "mimage"_a, "ctrl"_a = nullptr);
-                cls.def(py::init<Footprint const &, HeavyFootprintCtrl const *>(), "foot"_a,
-                        "ctrl"_a = nullptr);
+    py::class_<Class, std::shared_ptr<Class>, Footprint>(mod, ("HeavyFootprint" + suffix).c_str())
+            .def(py::init<Footprint const &,
+                 lsst::afw::image::MaskedImage<ImagePixelT, MaskPixelT, VariancePixelT> const&,
+                 HeavyFootprintCtrl const *>(),
+                 "foot"_a, "mimage"_a, "ctrl"_a = nullptr)
+            .def(py::init<Footprint const &, HeavyFootprintCtrl const *>(), "foot"_a,
+                 "ctrl"_a = nullptr)
 
-                cls.def("isHeavy", &Class::isHeavy);
-                cls.def("insert", (void (Class::*)(lsst::afw::image::MaskedImage<ImagePixelT> &) const) &
-                                          Class::insert);
-                cls.def("insert",
-                        (void (Class::*)(lsst::afw::image::Image<ImagePixelT> &) const) & Class::insert);
-                cls.def("getImageArray",
-                        (ndarray::Array<ImagePixelT, 1, 1>(Class::*)()) & Class::getImageArray);
-                cls.def("getMaskArray", (ndarray::Array<MaskPixelT, 1, 1>(Class::*)()) & Class::getMaskArray);
-                cls.def("getVarianceArray",
-                        (ndarray::Array<VariancePixelT, 1, 1>(Class::*)()) & Class::getVarianceArray);
-                cls.def("getMaskBitsSet", &Class::getMaskBitsSet);
-                cls.def("dot", &Class::dot);
-            });
+            .def("isHeavy", &Class::isHeavy)
+            .def("insert", (void (Class::*)(lsst::afw::image::MaskedImage<ImagePixelT> &) const) &
+                 Class::insert)
+            .def("insert",
+                 (void (Class::*)(lsst::afw::image::Image<ImagePixelT> &) const) & Class::insert)
+            .def("getImageArray",
+                 (ndarray::Array<ImagePixelT, 1, 1>(Class::*)()) & Class::getImageArray)
+            .def("getMaskArray", (ndarray::Array<MaskPixelT, 1, 1>(Class::*)()) & Class::getMaskArray)
+            .def("getVarianceArray",
+                 (ndarray::Array<VariancePixelT, 1, 1>(Class::*)()) & Class::getVarianceArray)
+            .def("getMaskBitsSet", &Class::getMaskBitsSet)
+            .def("dot", &Class::dot);
 
-    wrappers.wrap([](auto &mod) {
-        mod.def("makeHeavyFootprint",
-                (Class(*)(Footprint const &,
-                          lsst::afw::image::MaskedImage<ImagePixelT, MaskPixelT, VariancePixelT> const &,
-                          HeavyFootprintCtrl const *))
-                        makeHeavyFootprint<ImagePixelT, MaskPixelT, VariancePixelT>,
-                "foot"_a, "img"_a, "ctrl"_a = nullptr);
+    mod.def("makeHeavyFootprint",
+            (Class(*)(Footprint const &,
+                      lsst::afw::image::MaskedImage<ImagePixelT, MaskPixelT, VariancePixelT> const &,
+                      HeavyFootprintCtrl const *))
+            makeHeavyFootprint<ImagePixelT, MaskPixelT, VariancePixelT>,
+            "foot"_a, "img"_a, "ctrl"_a = nullptr);
 
-        mod.def("mergeHeavyFootprints", mergeHeavyFootprints<ImagePixelT, MaskPixelT, VariancePixelT>);
-    });
+    mod.def("mergeHeavyFootprints", mergeHeavyFootprints<ImagePixelT, MaskPixelT, VariancePixelT>);
+
 }
 
-void wrapHeavyFootprint(WrapperCollection &wrappers) {
-
-    declareHeavyFootprint<int>(wrappers, "I");
-    declareHeavyFootprint<std::uint16_t>(wrappers, "U");
-    declareHeavyFootprint<float>(wrappers, "F");
-    declareHeavyFootprint<double>(wrappers, "D");
+WRAP(HeavyFootprint) {
+    declareHeavyFootprint<int>(mod, "I");
+    declareHeavyFootprint<std::uint16_t>(mod, "U");
+    declareHeavyFootprint<float>(mod, "F");
+    declareHeavyFootprint<double>(mod, "D");
 }
 
 /**
@@ -469,15 +439,15 @@ void declarePeakTable(PyPeakTable &cls) {
                                   PeakTable::copyRecord);
 }
 
-void wrapPeak(utils::python::WrapperCollection &wrappers) {
+WRAP(Peak) {
 
-    auto clsPeakRecord = wrappers.wrapType(PyPeakRecord(wrappers.module, "PeakRecord"),
-                                           [](auto &mod, auto &cls) { declarePeakRecord(cls); });
-    auto clsPeakTable = wrappers.wrapType(PyPeakTable(wrappers.module, "PeakTable"),
-                                          [](auto &mod, auto &cls) { declarePeakTable(cls); });
+    PyPeakRecord clsPeakRecord(mod, "PeakRecord");
+    declarePeakRecord(clsPeakRecord);
+    PyPeakTable clsPeakTable(mod, "PeakTable");
+    declarePeakTable(clsPeakTable);
 
-    auto clsPeakColumnView = table::python::declareColumnView<PeakRecord>(wrappers, "Peak");
-    auto clsPeakCatalog = table::python::declareCatalog<PeakRecord>(wrappers, "Peak");
+    auto clsPeakColumnView = table::python::declareColumnView<PeakRecord>(mod, "Peak");
+    auto clsPeakCatalog = table::python::declareCatalog<PeakRecord>(mod, "Peak");
 
     clsPeakRecord.attr("Table") = clsPeakTable;
     clsPeakRecord.attr("ColumnView") = clsPeakColumnView;
@@ -492,44 +462,38 @@ void wrapPeak(utils::python::WrapperCollection &wrappers) {
 
 auto const NullPoint = lsst::geom::Point2D(std::numeric_limits<double>::quiet_NaN());
 
-void wrapPsf(utils::python::WrapperCollection& wrappers) {
+WRAP(Psf) {
+    py::class_<Psf, PySharedPtr<Psf>, typehandling::Storable, PsfTrampoline<> > cls(mod, "Psf");
+    py::enum_<Psf::ImageOwnerEnum>(cls, "ImageOwnerEnum")
+        .value("COPY", Psf::ImageOwnerEnum::COPY)
+        .value("INTERNAL", Psf::ImageOwnerEnum::INTERNAL)
+        .export_values();
 
-    auto clsPsf = wrappers.wrapType(
-            py::class_<Psf, PySharedPtr<Psf>, typehandling::Storable, PsfTrampoline<>>(
-                wrappers.module, "Psf"
-            ),
-            [](auto& mod, auto& cls) {
-                table::io::python::addPersistableMethods<Psf>(cls);
-                cls.def(py::init<bool, size_t>(), "isFixed"_a=false, "capacity"_a=100);  // Constructor for pure-Python subclasses
-                cls.def("clone", &Psf::clone);
-                cls.def("resized", &Psf::resized, "width"_a, "height"_a);
-                cls.def("computeImage", &Psf::computeImage, "position"_a = NullPoint,
-                        "color"_a = image::Color(), "owner"_a = Psf::ImageOwnerEnum::COPY);
-                cls.def("computeKernelImage", &Psf::computeKernelImage, "position"_a = NullPoint,
-                        "color"_a = image::Color(), "owner"_a = Psf::ImageOwnerEnum::COPY);
-                cls.def("computePeak", &Psf::computePeak, "position"_a = NullPoint,
-                        "color"_a = image::Color());
-                cls.def("computeApertureFlux", &Psf::computeApertureFlux, "radius"_a,
-                        "position"_a = NullPoint, "color"_a = image::Color());
-                cls.def("computeShape", &Psf::computeShape, "position"_a = NullPoint,
-                        "color"_a = image::Color());
-                cls.def("computeBBox", &Psf::computeBBox, "position"_a = NullPoint,
-                        "color"_a = image::Color());
-                cls.def("getLocalKernel", &Psf::getLocalKernel, "position"_a = NullPoint,
-                        "color"_a = image::Color());
-                cls.def("getAverageColor", &Psf::getAverageColor);
-                cls.def("getAveragePosition", &Psf::getAveragePosition);
-                cls.def_static("recenterKernelImage", &Psf::recenterKernelImage, "im"_a, "position"_a,
-                               "warpAlgorithm"_a = "lanczos5", "warpBuffer"_a = 5);
-                cls.def("getCacheCapacity", &Psf::getCacheCapacity);
-                cls.def("setCacheCapacity", &Psf::setCacheCapacity);
-            });
+    table::io::python::addPersistableMethods<Psf>(cls);
+    cls.def(py::init<bool, size_t>(), "isFixed"_a=false, "capacity"_a=100);  // Constructor for pure-Python subclasses
+    cls.def("clone", &Psf::clone);
+    cls.def("resized", &Psf::resized, "width"_a, "height"_a);
+    cls.def("computeImage", &Psf::computeImage, "position"_a = NullPoint,
+            "color"_a = image::Color(), "owner"_a = Psf::ImageOwnerEnum::COPY);
+    cls.def("computeKernelImage", &Psf::computeKernelImage, "position"_a = NullPoint,
+            "color"_a = image::Color(), "owner"_a = Psf::ImageOwnerEnum::COPY);
+    cls.def("computePeak", &Psf::computePeak, "position"_a = NullPoint,
+            "color"_a = image::Color());
+    cls.def("computeApertureFlux", &Psf::computeApertureFlux, "radius"_a,
+            "position"_a = NullPoint, "color"_a = image::Color());
+    cls.def("computeShape", &Psf::computeShape, "position"_a = NullPoint,
+            "color"_a = image::Color());
+    cls.def("computeBBox", &Psf::computeBBox, "position"_a = NullPoint,
+            "color"_a = image::Color());
+    cls.def("getLocalKernel", &Psf::getLocalKernel, "position"_a = NullPoint,
+            "color"_a = image::Color());
+    cls.def("getAverageColor", &Psf::getAverageColor);
+    cls.def("getAveragePosition", &Psf::getAveragePosition);
+    cls.def_static("recenterKernelImage", &Psf::recenterKernelImage, "im"_a, "position"_a,
+                   "warpAlgorithm"_a = "lanczos5", "warpBuffer"_a = 5);
+    cls.def("getCacheCapacity", &Psf::getCacheCapacity);
+    cls.def("setCacheCapacity", &Psf::setCacheCapacity);
 
-    wrappers.wrapType(py::enum_<Psf::ImageOwnerEnum>(clsPsf, "ImageOwnerEnum"), [](auto& mod, auto& enm) {
-        enm.value("COPY", Psf::ImageOwnerEnum::COPY);
-        enm.value("INTERNAL", Psf::ImageOwnerEnum::INTERNAL);
-        enm.export_values();
-    });
 }
 
 } // namespace
@@ -537,7 +501,6 @@ void wrapPsf(utils::python::WrapperCollection& wrappers) {
 
 WRAP(Detection){
     auto detmod = mod.def_submodule("detection");
-    //WrapperCollection wrappers(mod, "lsst.afw.detection");
     wrapPsf(detmod);
     wrapFootprintCtrl(detmod);
     wrapFootprint(detmod);

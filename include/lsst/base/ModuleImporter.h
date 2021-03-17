@@ -57,6 +57,8 @@ public:
     ModuleImporter (ModuleImporter&&) = delete;
     ModuleImporter& operator=(ModuleImporter&&) = delete;
 
+    static void install(ModuleImporter const * importer);
+
 protected:
 
     ModuleImporter() {}
@@ -68,8 +70,6 @@ protected:
 private:
 
     friend void installPythonModuleImporter();
-
-    static void install(ModuleImporter const * importer);
 
 };
 

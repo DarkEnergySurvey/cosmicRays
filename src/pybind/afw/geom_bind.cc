@@ -1231,14 +1231,14 @@ void wrapGeom(py::module_ &mod) {
     wrapTransform(mod);
     wrapSkyWcs(mod);
     polygon::wrapPolygon(mod);
-    ellipses::wrapSeparable(mod);
-    ellipses::wrapReducedShear(mod);
+    ellipses::wrapBaseCore(mod);
     ellipses::wrapRadii(mod);
     ellipses::wrapPixelRegion(mod);
     ellipses::wrapEllipticityBase(mod);
     ellipses::wrapDistortion(mod);
+    ellipses::wrapReducedShear(mod);
     ellipses::wrapConformalShear(mod);
-    ellipses::wrapBaseCore(mod);
+    ellipses::wrapSeparable(mod);
     detail::wrapFrameSetUtils(mod);
     wrapTransformFactory(mod);
     wrapSpan(mod);

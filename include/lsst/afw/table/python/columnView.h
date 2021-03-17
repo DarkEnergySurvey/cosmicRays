@@ -49,7 +49,7 @@ using PyColumnView =
  *                     (used to set the class name).
  */
 template <typename Record>
-PyColumnView<Record> declareColumnView(utils::python::WrapperCollection& wrappers, std::string const& name,
+PyColumnView<Record> declareColumnView(py::module_ &mod, std::string const& name,
                                        bool isBase = false) {
     std::string fullName;
     if (isBase) {
@@ -57,11 +57,10 @@ PyColumnView<Record> declareColumnView(utils::python::WrapperCollection& wrapper
     } else {
         fullName = name + "ColumnView";
     }
-    return wrappers.wrapType(PyColumnView<Record>(wrappers.module, fullName.c_str()),
-                             [](auto& mod, auto& cls) {
-                                 cls.def("getTable", &ColumnViewT<Record>::getTable);
-                                 cls.def_property_readonly("table", &ColumnViewT<Record>::getTable);
-                             });
+    return PyColumnView<Record>(mod, fullName.c_str())
+            .def("getTable", &ColumnViewT<Record>::getTable)
+            .def_property_readonly("table", &ColumnViewT<Record>::getTable);
+
 };
 }  // namespace python
 }  // namespace table

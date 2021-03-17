@@ -1988,6 +1988,10 @@ WRAP(Pixel) {
 }
 } // pixel
 
+WRAP(Initial) {
+    wrapDefect(mod);
+    wrapColor(mod);
+}
 WRAP(Image) {
     pixel::wrapPixel(mod);
     wrapImg(mod);
@@ -2003,8 +2007,6 @@ WRAP(Image) {
     wrapExposureInfo(mod);
     wrapExposure(mod);
     wrapReaders(mod);
-    wrapDefect(mod);
-    wrapColor(mod);
     wrapCalib(mod);
 }
 }

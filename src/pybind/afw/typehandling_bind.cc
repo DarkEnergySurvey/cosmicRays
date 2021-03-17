@@ -316,12 +316,10 @@ void declareMutableGenericMap(py::module_ &mod, std::string const& suffix,
 
 }
 
-//void wrapSimpleGenericMap(utils::python::WrapperCollection& wrappers) {
 WRAP(SimpleGenericMap) {
     declareSimpleGenericMap<std::string>(mod, "S", "strings");
 }
 
-//void wrapGenericMap(utils::python::WrapperCollection& wrappers) {
 WRAP(GenericMap) {
     declareGenericMap<std::string>(mod, "S", "strings");
     declareMutableGenericMap<std::string>(mod, "S", "strings");
@@ -331,13 +329,6 @@ WRAP(Storable) {
     py::class_<Storable, python::PySharedPtr<Storable>, table::io::Persistable, StorableHelper<>>(mod, "Storable")
             .def(py::init<>())
             .def("__eq__", [](Storable const& self, Storable const& other) { return self.equals(other); }, "other"_a);
-    //wrappers.wrapType(py::class_<Storable, python::PySharedPtr<Storable>, table::io::Persistable, StorableHelper<>>(wrappers.module, "Storable"), [](auto& mod, auto& cls) {
-        // Do not wrap methods inherited from Persistable
-    //    cls.def(py::init<>());  // Dummy constructor for pure-Python subclasses
-        // Do not wrap optional Storable methods; let subclasses do it as appropriate
-    //    cls.def("__eq__", [](Storable const& self, Storable const& other) { return self.equals(other); },
-    //            "other"_a);
-    //});
 }
 
 WRAP(Typehandling) {
@@ -345,12 +336,6 @@ WRAP(Typehandling) {
     wrapStorable(typemod);
     wrapGenericMap(typemod);
     wrapSimpleGenericMap(typemod);
-
-    //utils::python::WrapperCollection w(mod, "lsst.afw.typehandling");
-    //wrapStorable(w);
-    //wrapGenericMap(w);
-    //wrapSimpleGenericMap(w);
-    //w.finish();
 
 }
 }

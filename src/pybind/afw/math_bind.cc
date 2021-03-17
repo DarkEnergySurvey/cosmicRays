@@ -1463,7 +1463,7 @@ WRAP(Background) {
      * when the pointer is destroyed. Thus care needs to be taken to prevent leaks.
      * Basically Background should only ever be used as a base class (without data
      * members). */
-    py::class_<Background, std::unique_ptr<Background, py::nodelete>> clsBackground(mod, "Background");
+    py::class_<Background, std::shared_ptr<Background> > clsBackground(mod, "Background");
 
     /* Members */
     declareGetImage<float>(clsBackground, "F");
@@ -1854,9 +1854,10 @@ WRAP(Math) {
     wrapSpatialCellSet(mod);
     wrapCandidateVisitor(mod);
     wrapSpatialCellImageCandidate(mod);
+
+    wrapBoundedField(mod);
     wrapTransformBoundedField(mod);
     wrapPixelAreaBound(mod);
-    wrapBoundedField(mod);
     wrapApproximate(mod);
     wrapChebyshexBoundedField(mod);
     wrapMinimize(mod);
@@ -1865,15 +1866,15 @@ WRAP(Math) {
     wrapFunctionLibrary(mod);
     wrapLeastSquares(mod);
     wrapInterpolate(mod);
+    wrapStatistics(mod);
     wrapOffsetImage(mod);
     wrapTestClasses(mod);
-    wrapSpatial(mod);
+    //wrapSpatial(mod);
     wrapKernel(mod);
     wrapConvolveImage(mod);
     wrapBackground(mod);
     wrapWarpExposure(mod);
     wrapStack(mod);
-    wrapStatistics(mod);
     wrapRandom(mod);
     wrapProductBoundField(mod);
     detail::wrapSpline(mod);
