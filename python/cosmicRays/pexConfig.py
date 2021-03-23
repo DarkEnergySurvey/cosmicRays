@@ -47,8 +47,8 @@ except ImportError:
     YamlLoaders = ()
     doImport = None
 
-from pexComparison import getComparisonName, compareScalars, compareConfigs
-from pexCallStack import getStackFrame, getCallStack
+from cosmicRays.pexComparison import getComparisonName, compareScalars, compareConfigs
+from cosmicRays.pexCallStack import getStackFrame, getCallStack
 
 if yaml:
     YamlLoaders = (yaml.Loader, yaml.FullLoader, yaml.SafeLoader, yaml.UnsafeLoader)

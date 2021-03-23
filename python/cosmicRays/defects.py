@@ -36,7 +36,7 @@ import libcosmicRays.afw.detection as afwDetection
 import libcosmicRays.afw.image as afwImage
 import libcosmicRays.afw.geom as afwGeom
 from libcosmicRays.meas.algorithms import Defect
-from calibType import IsrCalib
+from cosmicRays.calibType import IsrCalib
 
 log = logging.getLogger(__name__)
 

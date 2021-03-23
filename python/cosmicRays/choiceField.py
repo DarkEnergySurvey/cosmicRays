@@ -27,8 +27,8 @@
 
 __all__ = ["ChoiceField"]
 
-from pexConfig import Field, _typeStr
-from pexCallStack import getStackFrame
+from cosmicRays.pexConfig import Field, _typeStr
+from cosmicRays.pexCallStack import getStackFrame
 
 
 class ChoiceField(Field):

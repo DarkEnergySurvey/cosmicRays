@@ -22,11 +22,11 @@
 import numpy as np
 import libcosmicRays.afw.math as afwMath
 import libcosmicRays.afw.image as afwImage
-from struct import Struct
-from task import Task
-import choiceField as chf
-import listField as lif
-import pexConfig
+from cosmicRays.struct import Struct
+from cosmicRays.task import Task
+import cosmicRays.choiceField as chf
+import cosmicRays.listField as lif
+import cosmicRays.pexConfig as pexConfig
 
 __all__ = ["OverscanCorrectionTaskConfig", "OverscanCorrectionTask"]
 

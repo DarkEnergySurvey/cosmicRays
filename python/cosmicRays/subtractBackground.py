@@ -26,17 +26,17 @@ import itertools
 
 import numpy
 
-from deprecated import suppress_deprecations
-from lsstDebug import getDebugFrame
+from cosmicRays.deprecated import suppress_deprecations
+from cosmicRays.lsstDebug import getDebugFrame
 import libcosmicRays.afw.display as afwDisplay
 import libcosmicRays.afw.image as afwImage
 import libcosmicRays.afw.math as afwMath
-import pexConfig
-import choiceField as ccf
-import rangeField as rf
-import listField as lf
-from task import Task, TaskError
-from struct import Struct
+import cosmicRays.pexConfig as pexConfig
+import cosmicRays.choiceField as ccf
+import cosmicRays.rangeField as rf
+import cosmicRays.listField as lf
+from cosmicRays.task import Task, TaskError
+from cosmicRays.struct import Struct
 
 
 class SubtractBackgroundConfig(pexConfig.Config):

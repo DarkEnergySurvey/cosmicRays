@@ -23,8 +23,8 @@ __all__ = ["Task", "TaskError"]
 
 import logging as logger
 
-import lsstDebug
-from configurableField import ConfigurableField
+import cosmicRays.lsstDebug as lsstDebug
+from cosmicRays.configurableField import ConfigurableField
 #from lsst.log import Log
 import libcosmicRays.daf as dafBase
 

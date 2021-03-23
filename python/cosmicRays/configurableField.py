@@ -29,9 +29,9 @@ __all__ = ('ConfigurableInstance', 'ConfigurableField')
 
 import copy
 
-from pexConfig import Config, Field, _joinNamePath, _typeStr, FieldValidationError
-from pexComparison import compareConfigs, getComparisonName
-from pexCallStack import getCallStack, getStackFrame
+from cosmicRays.pexConfig import Config, Field, _joinNamePath, _typeStr, FieldValidationError
+from cosmicRays.pexComparison import compareConfigs, getComparisonName
+from cosmicRays.pexCallStack import getCallStack, getStackFrame
 
 
 class ConfigurableInstance:

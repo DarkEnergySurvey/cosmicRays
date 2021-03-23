@@ -34,14 +34,14 @@ import libcosmicRays.afw.geom as afwGeom
 import libcosmicRays.afw.image as afwImage
 import libcosmicRays.afw.math as afwMath
 import libcosmicRays.afw.table as afwTable
-import pexConfig
-import rangeField as rgf
-import choiceField as chf
-import configurableField as cof
-import listField as lif
-from task import Task
-from struct import Struct
-from subtractBackground import SubtractBackgroundTask
+import cosmicRays.pexConfig as pexConfig
+import cosmicRays.rangeField as rgf
+import cosmicRays.choiceField as chf
+import cosmicRays.configurableField as cof
+import cosmicRays.listField as lif
+from cosmicRays.task import Task
+from cosmicRays.struct import Struct
+from cosmicRays.subtractBackground import SubtractBackgroundTask
 
 
 class SourceDetectionConfig(pexConfig.Config):

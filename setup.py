@@ -31,6 +31,7 @@ class CMakeBuild(build_ext):
         except OSError:
             raise RuntimeError("Cannot find cmake")
 
+        numproc = max(1, os.cpu_count() - 2)
         for ext in self.extensions:
             extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
             cfg = 'Debug' if _get_env_variable('COSMICRAYS_DEBUG') == 'ON' else 'Release'
@@ -42,12 +43,6 @@ class CMakeBuild(build_ext):
                 # Other intermediate static libraries are placed in a
                 # temporary build directory instead
                 '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), self.build_temp),
-                # Hint CMake to use the same Python executable that
-                # is launching the build, prevents possible mismatching if
-                # multiple versions of Python are installed
-                '-DPYTHON_EXECUTABLE={}'.format(sys.executable),
-                # Add other project-specific CMake arguments if needed
-                # ...
             ]
 
             if not os.path.exists(self.build_temp):
@@ -57,7 +52,7 @@ class CMakeBuild(build_ext):
             subprocess.check_call(['cmake', ext.cmake_lists_dir] + cmake_args,
                                   cwd=self.build_temp)
             # Build
-            subprocess.check_call(['cmake', '--build', '.', '--config', cfg],
+            subprocess.check_call(['cmake', '--build', '.', '--config', cfg, '--parallel', numproc],
                                   cwd=self.build_temp)
 
 version = "0.1.0"
@@ -70,5 +65,5 @@ setup(name='cosmicRays',
       install_requires=[],
       ext_modules=[CMakeExtension(module_name)],
       cmdclass={'build_ext': CMakeBuild},
-      package_dir={"", "python"},
+      package_dir={"": "python"},
       )

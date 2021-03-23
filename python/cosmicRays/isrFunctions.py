@@ -29,12 +29,12 @@ import libcosmicRays.afw.math as afwMath
 import libcosmicRays.meas.algorithms as measAlg
 import libcosmicRays.afw.cameraGeom as camGeom
 
-from detection import SourceDetectionTask
+from cosmicRays.detection import SourceDetectionTask
 
-from contextlib import contextmanager
+from cosmicRays.contextlib import contextmanager
 
-from overscan import OverscanCorrectionTask, OverscanCorrectionTaskConfig
-from defects import Defects
+from cosmicRays.overscan import OverscanCorrectionTask, OverscanCorrectionTaskConfig
+from cosmicRays.defects import Defects
 
 
 def createPsf(fwhm):

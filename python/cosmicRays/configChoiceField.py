@@ -30,9 +30,9 @@ __all__ = ["ConfigChoiceField"]
 import copy
 import collections.abc
 
-from .config import Config, Field, FieldValidationError, _typeStr, _joinNamePath
-from .comparison import getComparisonName, compareScalars, compareConfigs
-from .callStack import getCallStack, getStackFrame
+from cosmicRays.pexConfig import Config, Field, FieldValidationError, _typeStr, _joinNamePath
+from cosmicRays.pexComparison import getComparisonName, compareScalars, compareConfigs
+from cosmicRays.pexCallStack import getCallStack, getStackFrame
 
 
 class SelectionSet(collections.abc.MutableSet):

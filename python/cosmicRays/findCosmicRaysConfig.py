@@ -20,9 +20,9 @@
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
-import pexConfig
-from subtractBackground import SubtractBackgroundTask
-import configurableField as cof
+import cosmicRays.pexConfig as pexConfig
+from cosmicRays.subtractBackground import SubtractBackgroundTask
+import cosmicRays.configurableField as cof
 
 
 class FindCosmicRaysConfig(pexConfig.Config):
