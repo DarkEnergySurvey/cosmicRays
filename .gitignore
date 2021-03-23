@@ -1,3 +1,4 @@
 CMakeLists.txt.user
 *.autosave
-python/*
+
+python/cosmicRays/__pycache__/
