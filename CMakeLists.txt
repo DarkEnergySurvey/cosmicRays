@@ -5,8 +5,8 @@ project(cosmicRays LANGUAGES CXX)
 set(PACKAGE_NAME "cosmicRays")
 set(PACKAGE_STRING "cosmicRays 1.0.0")
 
-set(PACKAGE_VERSION_MAJOR "1")
-set(PACKAGE_VERSION_MINOR "0")
+set(PACKAGE_VERSION_MAJOR "0")
+set(PACKAGE_VERSION_MINOR "1")
 set(PACKAGE_VERSION_PATCH "0")
 set(PACKAGE_VERSION_LABEL "")
 
@@ -53,6 +53,7 @@ include_directories(cosmicRays ${EIGEN3_INCLUDE_DIR})
 include_directories(cosmicRays ${Python3_INCLUDE_DIRS})
 include_directories(cosmicRays ${NDARRAY_INCLUDE_DIR})
 
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE SOURCES "src/*.cc")
 file(GLOB_RECURSE INCLUDES "include/*.h*")
 
