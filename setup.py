@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
@@ -13,13 +14,17 @@ for f in sys.argv:
 for f in cmake_cmd_args:
     sys.argv.remove(f)
 
+def _get_env_variable(name, default='OFF'):
+    if name not in os.environ.keys():
+        return default
+    return os.environ[name]
 
 class CMakeExtension(Extension):
     def __init__(self, name, cmake_lists_dir='.', **kwarg):
         Extension.__init__(self, name, sources=[], **kwarg)
         self.cmake_lists_dir = os.path.abspath(cmake_lists_dir)
 
-class cmake_build_ext(build_ext):
+class CMakeBuild(build_ext):
     def build_extensions(self):
         try:
             out = subprocess.check_output(['cmake', '--version'])
@@ -28,8 +33,7 @@ class cmake_build_ext(build_ext):
 
         for ext in self.extensions:
             extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-            cfg = 'Debug' if options['--debug'] == 'ON' else 'Release'
-
+            cfg = 'Debug' if _get_env_variable('COSMICRAYS_DEBUG') == 'ON' else 'Release'
             cmake_args = [
                 '-DCMAKE_BUILD_TYPE=%s' % cfg,
                 # Ask CMake to place the resulting library in the directory
