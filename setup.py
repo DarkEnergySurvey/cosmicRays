@@ -52,7 +52,7 @@ class CMakeBuild(build_ext):
             subprocess.check_call(['cmake', ext.cmake_lists_dir] + cmake_args,
                                   cwd=self.build_temp)
             # Build
-            subprocess.check_call(['cmake', '--build', '.', '--config', cfg, '--parallel', numproc],
+            subprocess.check_call(['cmake', '--build', '.', '--config', cfg, '--parallel', str(numproc)],
                                   cwd=self.build_temp)
 
 version = "0.1.0"
