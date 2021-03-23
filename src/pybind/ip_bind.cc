@@ -53,7 +53,8 @@ WRAP(Isr) {
 }
 
 WRAP(IP) {
-    wrapIsr(mod);
+    auto isrmod = mod.def_submodule("isr");
+    wrapIsr(isrmod);
     wrapApplyLookupTable(mod);
 }
 
