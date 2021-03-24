@@ -22,7 +22,7 @@
 import math
 import numpy
 
-import libcosmicRays.geom
+import libcosmicRays.geom as geom
 import libcosmicRays.afw.image as afwImage
 import libcosmicRays.afw.detection as afwDetection
 import libcosmicRays.afw.math as afwMath
@@ -31,7 +31,7 @@ import libcosmicRays.afw.cameraGeom as camGeom
 
 from cosmicRays.detection import SourceDetectionTask
 
-from cosmicRays.contextlib import contextmanager
+from contextlib import contextmanager
 
 from cosmicRays.overscan import OverscanCorrectionTask, OverscanCorrectionTaskConfig
 from cosmicRays.defects import Defects
@@ -67,7 +67,7 @@ def transposeMaskedImage(maskedImage):
     transposed : `lsst.afw.image.MaskedImage`
         The transposed copy of the input image.
     """
-    transposed = maskedImage.Factory(lsst.geom.Extent2I(maskedImage.getHeight(), maskedImage.getWidth()))
+    transposed = maskedImage.Factory(geom.Extent2I(maskedImage.getHeight(), maskedImage.getWidth()))
     transposed.getImage().getArray()[:] = maskedImage.getImage().getArray().T
     transposed.getMask().getArray()[:] = maskedImage.getMask().getArray().T
     transposed.getVariance().getArray()[:] = maskedImage.getVariance().getArray().T
@@ -865,3 +865,19 @@ def setBadRegions(exposure, badStatistic="MEDIAN"):
     imageArray[:] = numpy.where(badPixels, value, imageArray)
 
     return badPixels.sum(), value
+
+
+def maskPixelsFromDefectList(maskedImage, defectList, maskName='BAD'):
+    """Set mask plane based on a defect list
+
+    @param[in,out]  maskedImage     masked image to process; mask plane is updated
+    @param[in]      defectList      defect list
+    @param[in]      maskName        mask plane name
+    """
+    # mask bad pixels
+    mask = maskedImage.getMask()
+    bitmask = mask.getPlaneBitMask(maskName)
+    fplist = []
+    for defect in defectList:
+        fplist.append(afwDetection.Footprint(defect.getBBox()))
+    afwDetection.setMaskFromFootprintList(mask, fplist, bitmask)
