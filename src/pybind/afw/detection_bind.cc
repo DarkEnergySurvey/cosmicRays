@@ -500,18 +500,15 @@ WRAP(Psf) {
 
 
 WRAP(Detection){
-    auto detmod = mod.def_submodule("detection");
-    wrapPsf(detmod);
-    wrapFootprintCtrl(detmod);
-    wrapFootprint(detmod);
-    wrapThreshold(detmod);
-    wrapFootprintSet(detmod);
-    wrapFootprintMerge(detmod);
-    wrapPeak(detmod);
-    wrapGaussianPsf(detmod);
-    wrapHeavyFootprint(detmod);
-    //wrappers.finish();
-
+    wrapPsf(mod);
+    wrapFootprintCtrl(mod);
+    wrapFootprint(mod);
+    wrapThreshold(mod);
+    wrapFootprintSet(mod);
+    wrapFootprintMerge(mod);
+    wrapPeak(mod);
+    wrapGaussianPsf(mod);
+    wrapHeavyFootprint(mod);
 }
 
 }
