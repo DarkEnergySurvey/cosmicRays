@@ -1285,6 +1285,7 @@ void wrapGeom(py::module_ &mod) {
     ellipses::wrapReducedShear(mod);
     ellipses::wrapConformalShear(mod);
     ellipses::wrapSeparable(mod);
+    ellipses::wrapQuadrupole(mod);
     detail::wrapFrameSetUtils(mod);
     wrapTransformFactory(mod);
     wrapSpan(mod);
