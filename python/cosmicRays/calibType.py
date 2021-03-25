@@ -26,7 +26,7 @@ import yaml
 from astropy.table import Table
 from astropy.io import fits
 
-from libcosmicRays.daf import PropertyList
+from cosmicRays.propertyContainer import PropertyList
 
 
 __all__ = ["IsrCalib", "IsrProvenance"]
