@@ -174,10 +174,9 @@ void declareFits(py::module & mod) {
 }
 
 WRAP(Fits) {
-    auto fitsmod = mod.def_submodule("fits");
-    py::class_<MemFileManager> clsMemFileManager(fitsmod, "MemFileManager");
+    py::class_<MemFileManager> clsMemFileManager(mod, "MemFileManager");
 
-    py::register_exception<FitsError>(fitsmod, "FitsError", PyExc_IOError);
+    py::register_exception<FitsError>(mod, "FitsError", PyExc_IOError);
     //    lsst::pex::exceptions::python::declareException<FitsTypeError, FitsError>(mod, "FitsTypeError",
     //    "FitsError");
 
@@ -199,27 +198,27 @@ WRAP(Fits) {
                               return readMetadata(self, hdu, strip);
                           }, "hdu"_a=DEFAULT_HDU, "strip"_a=false);
 
-    declareImageCompression(fitsmod);
-    declareImageScalingOptions(fitsmod);
-    declareImageScale(fitsmod);
-    declareImageWriteOptions(fitsmod);
-    declareFits(fitsmod);
+    declareImageCompression(mod);
+    declareImageScalingOptions(mod);
+    declareImageScale(mod);
+    declareImageWriteOptions(mod);
+    declareFits(mod);
 
-    fitsmod.attr("DEFAULT_HDU") = DEFAULT_HDU;
-    fitsmod.def("combineMetadata", combineMetadata, "first"_a, "second"_a);
-    fitsmod.def("makeLimitedFitsHeader", &makeLimitedFitsHeader, "metadata"_a,
-            "excludeNames"_a = std::set<std::string>());
-    fitsmod.def("readMetadata",
+    mod.attr("DEFAULT_HDU") = DEFAULT_HDU;
+    mod.def("combineMetadata", combineMetadata, "first"_a, "second"_a);
+    mod.def("makeLimitedFitsHeader", &makeLimitedFitsHeader, "metadata"_a,
+          "excludeNames"_a = std::set<std::string>());
+    mod.def("readMetadata",
             [](std::string const& filename, int hdu=DEFAULT_HDU, bool strip=false) {
                 return readMetadata(filename, hdu, strip);
             }, "fileName"_a, "hdu"_a=DEFAULT_HDU, "strip"_a=false);
-    fitsmod.def("setAllowImageCompression", &setAllowImageCompression, "allow"_a);
-    fitsmod.def("getAllowImageCompression", &getAllowImageCompression);
+    mod.def("setAllowImageCompression", &setAllowImageCompression, "allow"_a);
+    mod.def("getAllowImageCompression", &getAllowImageCompression);
 
-    fitsmod.def("compressionAlgorithmFromString", &compressionAlgorithmFromString);
-    fitsmod.def("compressionAlgorithmToString", &compressionAlgorithmToString);
-    fitsmod.def("scalingAlgorithmFromString", &scalingAlgorithmFromString);
-    fitsmod.def("scalingAlgorithmToString", &scalingAlgorithmToString);
+    mod.def("compressionAlgorithmFromString", &compressionAlgorithmFromString);
+    mod.def("compressionAlgorithmToString", &compressionAlgorithmToString);
+    mod.def("scalingAlgorithmFromString", &scalingAlgorithmFromString);
+    mod.def("scalingAlgorithmToString", &scalingAlgorithmToString);
 }
 }
 }
