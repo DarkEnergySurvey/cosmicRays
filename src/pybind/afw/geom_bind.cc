@@ -1205,6 +1205,52 @@ WRAP(BaseCore) {
     //    });
 }
 
+WRAP(Quadrupole) {
+    /* Module level */
+    py::class_<Quadrupole, std::shared_ptr<Quadrupole>, BaseCore> clsQuadrupole(mod, "Quadrupole");
+
+    /* Member types and enums */
+    typedef Eigen::Matrix<double, 2, 2, Eigen::DontAlign> Matrix;
+
+    /* Constructors */
+    clsQuadrupole.def(py::init<double, double, double, bool>(), "ixx"_a = 1.0, "iyy"_a = 1.0, "ixy"_a = 0.0,
+                      "normalize"_a = false);
+    clsQuadrupole.def(py::init<BaseCore::ParameterVector const &, bool>(), "vector"_a, "normalize"_a = false);
+    clsQuadrupole.def(py::init<Matrix const &, bool>(), "matrix"_a, "normalize"_a = true);
+    clsQuadrupole.def(py::init<Quadrupole const &>());
+    clsQuadrupole.def(py::init<BaseCore const &>());
+    clsQuadrupole.def(py::init<BaseCore::Convolution const &>());
+
+    py::implicitly_convertible<BaseCore::Convolution, Quadrupole>();
+
+    /* Operators */
+    clsQuadrupole.def("__eq__", [](Quadrupole &self, Quadrupole &other) { return self == other; },
+    py::is_operator());
+    clsQuadrupole.def("__ne__", [](Quadrupole &self, Quadrupole &other) { return self != other; },
+    py::is_operator());
+
+    /* Members */
+    clsQuadrupole.def("getIxx", &Quadrupole::getIxx);
+    clsQuadrupole.def("getIyy", &Quadrupole::getIyy);
+    clsQuadrupole.def("getIxy", &Quadrupole::getIxy);
+    clsQuadrupole.def("setIxx", &Quadrupole::setIxx);
+    clsQuadrupole.def("setIyy", &Quadrupole::setIyy);
+    clsQuadrupole.def("setIxy", &Quadrupole::setIxy);
+    clsQuadrupole.def("assign", [](Quadrupole &self, Quadrupole &other) { self = other; });
+    clsQuadrupole.def("assign", [](Quadrupole &self, BaseCore &other) { self = other; });
+    clsQuadrupole.def("transform", [](Quadrupole &self, lsst::geom::LinearTransform const &t) {
+        return std::static_pointer_cast<Quadrupole>(self.transform(t).copy());
+    });
+    clsQuadrupole.def("transformInPlace", [](Quadrupole &self, lsst::geom::LinearTransform const &t) {
+        self.transform(t).inPlace();
+    });
+    // TODO: pybind11 based on swig wrapper for now. Hopefully can be removed once pybind11 gets smarter
+    // handling of implicit conversions
+    clsQuadrupole.def("convolve", [](Quadrupole &self, BaseCore const &other) {
+        return Quadrupole(self.convolve(other));
+    });
+}
+
 } //namespace
 } //ellipses
 
