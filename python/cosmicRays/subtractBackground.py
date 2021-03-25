@@ -37,6 +37,7 @@ import cosmicRays.rangeField as rf
 import cosmicRays.listField as lf
 from cosmicRays.task import Task, TaskError
 from cosmicRays.struct import Struct
+import cosmicRays.maskContinued as cmc
 
 
 class SubtractBackgroundConfig(pexConfig.Config):
@@ -91,7 +92,7 @@ class SubtractBackgroundConfig(pexConfig.Config):
     ignoredPixelMask = lf.ListField(
         doc="Names of mask planes to ignore while estimating the background",
         dtype=str, default=["BAD", "EDGE", "DETECTED", "DETECTED_NEGATIVE", "NO_DATA", ],
-        itemCheck=lambda x: x in afwImage.Mask().getMaskPlaneDict().keys(),
+        itemCheck=lambda x: x in cmc.Mask().getMaskPlaneDict().keys(),
     )
     isNanSafe = pexConfig.Field(
         doc="Ignore NaNs when estimating the background",

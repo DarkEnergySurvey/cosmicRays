@@ -23,6 +23,7 @@ import datetime
 import os.path
 import warnings
 import yaml
+import logging
 from astropy.table import Table
 from astropy.io import fits
 
@@ -78,7 +79,7 @@ class IsrCalib(abc.ABC):
                                         '_detectorName', '_detectorSerial', '_detectorId',
                                         '_filter', '_calibId', '_metadata'])
 
-        self.log = log if log else Log.getLogger(__name__.partition(".")[2])
+        self.log = log if log else logging.getLogger(__name__.partition(".")[2])
 
         if detector:
             self.fromDetector(detector)

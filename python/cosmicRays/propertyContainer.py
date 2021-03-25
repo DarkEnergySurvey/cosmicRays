@@ -29,7 +29,7 @@ import numbers
 from collections.abc import Mapping, KeysView, ValuesView, ItemsView
 
 # Ensure that C++ exceptions are properly translated to Python
-import lsst.pex.exceptions  # noqa: F401
+import libcosmicRays.pex  # noqa: F401
 from cosmicRays.utils import continueClass
 
 from libcosmicRays.daf import PropertySet, PropertyList
