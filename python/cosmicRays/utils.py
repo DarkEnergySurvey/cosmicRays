@@ -172,7 +172,7 @@ class TemplateMeta(type):
     .. code-block:: python
 
         import numpy as np
-        from ._image import ImageF, ImageD
+        from cosmicRays.afw.image import ImageF, ImageD
 
         class Image(metaclass=TemplateMeta):
             pass
