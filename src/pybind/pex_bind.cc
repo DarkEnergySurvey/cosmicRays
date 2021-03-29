@@ -404,7 +404,6 @@ WRAP(Pex){
             .def("getMaxOccurs", &policy::Definition::getMaxOccurs)
             .def("getMinOccurs", &policy::Definition::getMinOccurs)
             .def("check", &policy::Definition::check);
-    py::print("X");
 }
 
 }
