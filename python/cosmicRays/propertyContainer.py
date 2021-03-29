@@ -159,7 +159,7 @@ def _propertyContainerElementTypeName(container, name):
     """
     try:
         t = container.typeOf(name)
-    except LookupError as e:
+    except RuntimeError as e:
         # KeyError is more commonly expected when asking for an element
         # from a mapping.
         raise KeyError(str(e))
@@ -271,7 +271,7 @@ def _guessIntegerType(container, name, value):
     if isinstance(value, numbers.Integral):
         try:
             containerType = _propertyContainerElementTypeName(container, name)
-        except LookupError:
+        except KeyError:
             # nothing in the container so choose based on size.
             if value <= maxInt and value >= minInt:
                 useType = "Int"

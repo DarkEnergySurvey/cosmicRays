@@ -25,6 +25,7 @@ import numpy
 import libcosmicRays.geom as geom
 import libcosmicRays.afw.image as afwImage
 import libcosmicRays.afw.detection as afwDetection
+import libcosmicRays.afw.geom as afwGeom
 import libcosmicRays.afw.math as afwMath
 import libcosmicRays.meas.algorithms as measAlg
 import libcosmicRays.afw.cameraGeom as camGeom
@@ -867,17 +868,22 @@ def setBadRegions(exposure, badStatistic="MEDIAN"):
     return badPixels.sum(), value
 
 
-def maskPixelsFromDefectList(maskedImage, defectList, maskName='BAD'):
+def maskPixelsFromDefectList(maskedImage, defectList, maskName='BAD', growFootprints=0):
     """Set mask plane based on a defect list
 
     @param[in,out]  maskedImage     masked image to process; mask plane is updated
     @param[in]      defectList      defect list
     @param[in]      maskName        mask plane name
+    @param[in]      growFootprints  size to grow the footprints by (radius)
     """
     # mask bad pixels
     mask = maskedImage.getMask()
     bitmask = mask.getPlaneBitMask(maskName)
     fplist = []
+
     for defect in defectList:
-        fplist.append(afwDetection.Footprint(defect.getBBox()))
+        fp = afwDetection.Footprint(afwGeom.SpanSet(defect.getBBox()))
+        if growFootprints > 0:
+            fp.dilate(growFootprints)
+        fplist.append(fp)
     afwDetection.setMaskFromFootprintList(mask, fplist, bitmask)
