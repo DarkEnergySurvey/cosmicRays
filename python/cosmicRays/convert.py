@@ -24,7 +24,7 @@ import libcosmicRays.daf as dafBase
 
 def makePropertySet(config):
     def _helper(ps, prefix, dict_):
-        for k,v in dict_.iteritems():
+        for k,v in dict_.items():
             name = prefix + "." + k if prefix is not None else k
             if isinstance(v, dict):
                 _helper(ps, name, v)
@@ -41,7 +41,7 @@ def makePropertySet(config):
 def makePolicy(config):
     def _helper(dict_):
         p = pex.Policy()
-        for k,v in dict_.iteritems():
+        for k,v in dict_.items():
             if isinstance(v, dict):
                 p.set(k, _helper(v))
             elif isinstance(v, list):
