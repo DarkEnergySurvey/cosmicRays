@@ -26,7 +26,7 @@ import numpy as np
 from cosmicRays.utils import TemplateMeta
 
 from cosmicRays.slicing import supportSlicing
-from ..disableArithmetic import disableImageArithmetic
+from cosmicRays.disableArithmetic import disableImageArithmetic
 from cosmicRays.fitsIoWithOptions import imageReadFitsWithOptions, imageWriteFitsWithOptions
 from libcosmicRays.afw.image import ImageI, ImageF, ImageD, ImageU, ImageL
 from libcosmicRays.afw.image import DecoratedImageI, DecoratedImageF, DecoratedImageD, DecoratedImageU, DecoratedImageL

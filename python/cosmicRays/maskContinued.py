@@ -27,9 +27,9 @@ import numpy as np
 
 from cosmicRays.utils import TemplateMeta
 from cosmicRays.fitsIoWithOptions import imageReadFitsWithOptions, imageWriteFitsWithOptions
-from libCosmicRays.afw.image import MaskX
+from libcosmicRays.afw.image import MaskX
 from cosmicRays.slicing import supportSlicing
-from ..disableArithmetic import disableMaskArithmetic
+from cosmicRays.disableArithmetic import disableMaskArithmetic
 
 MaskPixel = np.int32
 

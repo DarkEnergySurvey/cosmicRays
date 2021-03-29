@@ -24,7 +24,7 @@ __all__ = ["imageReadFitsWithOptions",
 
 import libcosmicRays.geom as geom
 from libcosmicRays.afw.fits import ImageWriteOptions
-from cosmicRays.imageContinued import image
+from libcosmicRays.afw import image
 
 
 # This must be added to a class as a *classmethod*, for example:
@@ -95,7 +95,7 @@ def imageWriteFitsWithOptions(self, dest, options):
         try:
             writeOptions = ImageWriteOptions(options.getPropertySet("image"))
         except Exception as e:
-            log = Log.getLogger("lsst.afw.image")
+            log = logging.getLogger()
             log.warn("Could not parse options; writing with defaults: {}".format(e))
         else:
             self.writeFits(dest, writeOptions)
@@ -120,7 +120,7 @@ def exposureWriteFitsWithOptions(self, dest, options):
             writeOptionDict = {name + "Options": ImageWriteOptions(options.getPropertySet(name))
                                for name in ("image", "mask", "variance")}
         except Exception as e:
-            log = Log.getLogger("lsst.afw.image")
+            log = logging.getLogger()
             log.warn("Could not parse options; writing with defaults: {}".format(e))
         else:
             self.writeFits(dest, **writeOptionDict)
